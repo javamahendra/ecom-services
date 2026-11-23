@@ -1,0 +1,1214 @@
+[
+  {
+    "name": "Everyday 14-inch Laptop",
+    "description": "Lightweight laptop for work, study, and everyday browsing.",
+    "category": "Electronics",
+    "productType": "Laptop",
+    "baseColor": "Silver",
+    "price": 799.99,
+    "discount": 10,
+    "offerPrice": 719.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Silver",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853",
+          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8"
+        ],
+        "stockCount": 12
+      },
+      {
+        "color": "Space Gray",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853"
+        ],
+        "stockCount": 5
+      }
+    ]
+  },
+  {
+    "name": "Everyday Android Smartphone",
+    "description": "Unlocked smartphone with a large display and all-day battery life.",
+    "category": "Electronics",
+    "productType": "Mobile",
+    "baseColor": "Black",
+    "price": 499.99,
+    "discount": 5,
+    "offerPrice": 474.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9",
+          "https://images.unsplash.com/photo-1598327105666-5b89351aff97"
+        ],
+        "stockCount": 20
+      },
+      {
+        "color": "Blue",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9"
+        ],
+        "stockCount": 0
+      }
+    ]
+  },
+  {
+    "name": "65W USB-C Wall Charger",
+    "description": "Compact USB-C fast charger for compatible phones, tablets, and laptops.",
+    "category": "Electronics",
+    "productType": "Charger",
+    "baseColor": "White",
+    "price": 39.99,
+    "discount": 0,
+    "offerPrice": 39.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "White",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1583863788434-e58a36330cf0"
+        ],
+        "stockCount": 45
+      },
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1583863788434-e58a36330cf0"
+        ],
+        "stockCount": 18
+      }
+    ]
+  },
+  {
+    "name": "Noise-Cancelling Wireless Headphones",
+    "description": "Over-ear Bluetooth headphones with active noise cancellation and a long-lasting battery.",
+    "category": "Electronics",
+    "productType": "Headphones",
+    "baseColor": "Black",
+    "price": 199.99,
+    "discount": 15,
+    "offerPrice": 169.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
+          "https://images.unsplash.com/photo-1484704849700-f032a568e944"
+        ],
+        "stockCount": 16
+      },
+      {
+        "color": "Silver",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e"
+        ],
+        "stockCount": 8
+      }
+    ]
+  },
+  {
+    "name": "10-inch Wi-Fi Tablet",
+    "description": "Portable tablet for streaming, reading, video calls, and everyday apps.",
+    "category": "Electronics",
+    "productType": "Tablet",
+    "baseColor": "Gray",
+    "price": 329.99,
+    "discount": 8,
+    "offerPrice": 303.59,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Gray",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0",
+          "https://images.unsplash.com/photo-1561154464-82e9adf32764"
+        ],
+        "stockCount": 11
+      },
+      {
+        "color": "Blue",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0"
+        ],
+        "stockCount": 0
+      }
+    ]
+  },
+  {
+    "name": "27-inch 4K Monitor",
+    "description": "4K UHD monitor with a wide color gamut for productivity, creative work, and entertainment.",
+    "category": "Electronics",
+    "productType": "Monitor",
+    "baseColor": "Black",
+    "price": 449.99,
+    "discount": 12,
+    "offerPrice": 395.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf",
+          "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46"
+        ],
+        "stockCount": 7
+      }
+    ]
+  },
+  {
+    "name": "Mechanical RGB Keyboard",
+    "description": "Wired mechanical keyboard with customizable RGB lighting and tactile switches.",
+    "category": "Electronics",
+    "productType": "Keyboard",
+    "baseColor": "Black",
+    "price": 89.99,
+    "discount": 10,
+    "offerPrice": 80.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1587829741301-dc798b83add3",
+          "https://images.unsplash.com/photo-1595225476474-87563907a212"
+        ],
+        "stockCount": 24
+      },
+      {
+        "color": "White",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1587829741301-dc798b83add3"
+        ],
+        "stockCount": 9
+      }
+    ]
+  },
+  {
+    "name": "Ergonomic Wireless Mouse",
+    "description": "Rechargeable wireless mouse with adjustable sensitivity and a comfortable contoured shape.",
+    "category": "Electronics",
+    "productType": "Mouse",
+    "baseColor": "Graphite",
+    "price": 49.99,
+    "discount": 5,
+    "offerPrice": 47.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Graphite",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1527814050087-3793815479db"
+        ],
+        "stockCount": 31
+      },
+      {
+        "color": "White",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1527814050087-3793815479db"
+        ],
+        "stockCount": 14
+      }
+    ]
+  },
+  {
+    "name": "20,000mAh USB-C Power Bank",
+    "description": "High-capacity portable charger with USB-C fast charging for phones and tablets.",
+    "category": "Electronics",
+    "productType": "Power Bank",
+    "baseColor": "Black",
+    "price": 59.99,
+    "discount": 0,
+    "offerPrice": 59.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5"
+        ],
+        "stockCount": 26
+      },
+      {
+        "color": "Blue",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5"
+        ],
+        "stockCount": 6
+      }
+    ]
+  },
+  {
+    "name": "True Wireless Earbuds",
+    "description": "Compact wireless earbuds with a charging case, touch controls, and clear call audio.",
+    "category": "Electronics",
+    "productType": "Earbuds",
+    "baseColor": "White",
+    "price": 79.99,
+    "discount": 20,
+    "offerPrice": 63.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      {
+        "color": "White",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1"
+        ],
+        "stockCount": 19
+      },
+      {
+        "color": "Black",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1"
+        ],
+        "stockCount": 0
+      }
+    ]
+  },
+  {
+    "name": "Business 15-inch Laptop",
+    "description": "Powerful laptop with a crisp display and fast solid-state storage for office work.",
+    "category": "Electronics",
+    "productType": "Laptop",
+    "baseColor": "Silver",
+    "price": 1099.99,
+    "discount": 10,
+    "offerPrice": 989.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1496181133206-80ce9b88a853"], "stockCount": 8 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1496181133206-80ce9b88a853"], "stockCount": 4 }
+    ]
+  },
+  {
+    "name": "Creator 16-inch Laptop",
+    "description": "High-performance laptop designed for photo editing, video production, and design work.",
+    "category": "Electronics",
+    "productType": "Laptop",
+    "baseColor": "Space Gray",
+    "price": 1599.99,
+    "discount": 7,
+    "offerPrice": 1487.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Space Gray", "imageUrls": ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8"], "stockCount": 5 },
+      { "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8"], "stockCount": 3 }
+    ]
+  },
+  {
+    "name": "5G Pro Smartphone",
+    "description": "Unlocked 5G smartphone with a high-resolution camera and vivid edge-to-edge display.",
+    "category": "Electronics",
+    "productType": "Mobile",
+    "baseColor": "Graphite",
+    "price": 899.99,
+    "discount": 10,
+    "offerPrice": 809.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Graphite", "imageUrls": ["https://images.unsplash.com/photo-1511707171634-5f897ff02aa9"], "stockCount": 13 },
+      { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1511707171634-5f897ff02aa9"], "stockCount": 7 }
+    ]
+  },
+  {
+    "name": "Compact 5G Smartphone",
+    "description": "Lightweight unlocked smartphone with 5G connectivity and dependable all-day performance.",
+    "category": "Electronics",
+    "productType": "Mobile",
+    "baseColor": "Black",
+    "price": 349.99,
+    "discount": 5,
+    "offerPrice": 332.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1598327105666-5b89351aff97"], "stockCount": 22 },
+      { "color": "Green", "imageUrls": ["https://images.unsplash.com/photo-1598327105666-5b89351aff97"], "stockCount": 10 }
+    ]
+  },
+  {
+    "name": "11-inch Pro Tablet",
+    "description": "Responsive tablet for note-taking, drawing, multitasking, and high-quality video streaming.",
+    "category": "Electronics",
+    "productType": "Tablet",
+    "baseColor": "Silver",
+    "price": 599.99,
+    "discount": 10,
+    "offerPrice": 539.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0"], "stockCount": 9 },
+      { "color": "Gray", "imageUrls": ["https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0"], "stockCount": 6 }
+    ]
+  },
+  {
+    "name": "8-inch Compact Tablet",
+    "description": "Small, portable Wi-Fi tablet for reading, travel, and everyday browsing.",
+    "category": "Electronics",
+    "productType": "Tablet",
+    "baseColor": "Blue",
+    "price": 179.99,
+    "discount": 0,
+    "offerPrice": 179.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1561154464-82e9adf32764"], "stockCount": 15 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1561154464-82e9adf32764"], "stockCount": 12 }
+    ]
+  },
+  {
+    "name": "34-inch Curved Ultrawide Monitor",
+    "description": "Curved ultrawide display with an immersive workspace for gaming and productivity.",
+    "category": "Electronics",
+    "productType": "Monitor",
+    "baseColor": "Black",
+    "price": 699.99,
+    "discount": 15,
+    "offerPrice": 594.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1527443224154-c4a3942d3acf"], "stockCount": 6 }
+    ]
+  },
+  {
+    "name": "24-inch Full HD Monitor",
+    "description": "Space-saving Full HD monitor with an adjustable stand for home and office desks.",
+    "category": "Electronics",
+    "productType": "Monitor",
+    "baseColor": "Black",
+    "price": 169.99,
+    "discount": 5,
+    "offerPrice": 161.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1527864550417-7fd91fc51a46"], "stockCount": 17 }
+    ]
+  },
+  {
+    "name": "Wireless Mechanical Keyboard",
+    "description": "Bluetooth mechanical keyboard with rechargeable battery and tactile switches.",
+    "category": "Electronics",
+    "productType": "Keyboard",
+    "baseColor": "White",
+    "price": 119.99,
+    "discount": 10,
+    "offerPrice": 107.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1587829741301-dc798b83add3"], "stockCount": 14 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1587829741301-dc798b83add3"], "stockCount": 11 }
+    ]
+  },
+  {
+    "name": "Slim Wireless Keyboard",
+    "description": "Quiet, low-profile wireless keyboard for comfortable everyday typing.",
+    "category": "Electronics",
+    "productType": "Keyboard",
+    "baseColor": "Gray",
+    "price": 54.99,
+    "discount": 0,
+    "offerPrice": 54.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Gray", "imageUrls": ["https://images.unsplash.com/photo-1595225476474-87563907a212"], "stockCount": 20 }
+    ]
+  },
+  {
+    "name": "Precision Gaming Mouse",
+    "description": "Lightweight wired gaming mouse with adjustable DPI and programmable buttons.",
+    "category": "Electronics",
+    "productType": "Mouse",
+    "baseColor": "Black",
+    "price": 69.99,
+    "discount": 10,
+    "offerPrice": 62.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1527814050087-3793815479db"], "stockCount": 28 },
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1527814050087-3793815479db"], "stockCount": 10 }
+    ]
+  },
+  {
+    "name": "Bluetooth Travel Mouse",
+    "description": "Compact Bluetooth mouse with a quiet click design for mobile work and travel.",
+    "category": "Electronics",
+    "productType": "Mouse",
+    "baseColor": "Blue",
+    "price": 29.99,
+    "discount": 5,
+    "offerPrice": 28.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1527814050087-3793815479db"], "stockCount": 23 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1527814050087-3793815479db"], "stockCount": 18 }
+    ]
+  },
+  {
+    "name": "Portable Bluetooth Speaker",
+    "description": "Water-resistant portable speaker with wireless audio and rich stereo sound.",
+    "category": "Electronics",
+    "productType": "Speaker",
+    "baseColor": "Blue",
+    "price": 89.99,
+    "discount": 10,
+    "offerPrice": 80.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1"], "stockCount": 16 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1"], "stockCount": 12 }
+    ]
+  },
+  {
+    "name": "Desktop Stereo Speakers",
+    "description": "Compact powered stereo speakers with clear sound for computers and workstations.",
+    "category": "Electronics",
+    "productType": "Speaker",
+    "baseColor": "Black",
+    "price": 129.99,
+    "discount": 0,
+    "offerPrice": 129.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1545454675-3531b543be5d"], "stockCount": 8 }
+    ]
+  },
+  {
+    "name": "USB-C 100W GaN Charger",
+    "description": "Compact GaN wall charger with high-speed USB-C power delivery for laptops and phones.",
+    "category": "Electronics",
+    "productType": "Charger",
+    "baseColor": "White",
+    "price": 79.99,
+    "discount": 12,
+    "offerPrice": 70.39,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0"], "stockCount": 25 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0"], "stockCount": 17 }
+    ]
+  },
+  {
+    "name": "Dual-Port 30W Wall Charger",
+    "description": "Small dual-port USB-C charger for powering two mobile devices at once.",
+    "category": "Electronics",
+    "productType": "Charger",
+    "baseColor": "Black",
+    "price": 24.99,
+    "discount": 0,
+    "offerPrice": 24.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0"], "stockCount": 38 },
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1583863788434-e58a36330cf0"], "stockCount": 29 }
+    ]
+  },
+  {
+    "name": "100W USB-C Charging Cable",
+    "description": "Durable braided USB-C cable supporting fast charging and high-speed data transfer.",
+    "category": "Electronics",
+    "productType": "Cable",
+    "baseColor": "Black",
+    "price": 19.99,
+    "discount": 10,
+    "offerPrice": 17.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64"], "stockCount": 42 },
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64"], "stockCount": 35 }
+    ]
+  },
+  {
+    "name": "USB-C to HDMI Adapter",
+    "description": "Compact adapter for connecting USB-C laptops and tablets to HDMI displays.",
+    "category": "Electronics",
+    "productType": "Adapter",
+    "baseColor": "Gray",
+    "price": 29.99,
+    "discount": 0,
+    "offerPrice": 29.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Gray", "imageUrls": ["https://images.unsplash.com/photo-1625948515291-69613efd103f"], "stockCount": 27 }
+    ]
+  },
+  {
+    "name": "Multiport USB-C Hub",
+    "description": "Portable USB-C hub with HDMI, USB, and card-reader connections for laptops.",
+    "category": "Electronics",
+    "productType": "Adapter",
+    "baseColor": "Space Gray",
+    "price": 59.99,
+    "discount": 8,
+    "offerPrice": 55.19,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Space Gray", "imageUrls": ["https://images.unsplash.com/photo-1625948515291-69613efd103f"], "stockCount": 19 },
+      { "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1625948515291-69613efd103f"], "stockCount": 12 }
+    ]
+  },
+  {
+    "name": "2TB Portable SSD",
+    "description": "Fast external solid-state drive for backups, creative projects, and large files.",
+    "category": "Electronics",
+    "productType": "Storage",
+    "baseColor": "Black",
+    "price": 219.99,
+    "discount": 10,
+    "offerPrice": 197.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1597872200969-2b65d56bd16b"], "stockCount": 10 },
+      { "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1597872200969-2b65d56bd16b"], "stockCount": 7 }
+    ]
+  },
+  {
+    "name": "1TB USB External Hard Drive",
+    "description": "Portable external hard drive for storing documents, photos, and media libraries.",
+    "category": "Electronics",
+    "productType": "Storage",
+    "baseColor": "Black",
+    "price": 74.99,
+    "discount": 5,
+    "offerPrice": 71.24,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1597872200969-2b65d56bd16b"], "stockCount": 21 }
+    ]
+  },
+  {
+    "name": "128GB USB Flash Drive",
+    "description": "Compact USB flash drive for transferring and carrying everyday files.",
+    "category": "Electronics",
+    "productType": "Storage",
+    "baseColor": "Silver",
+    "price": 22.99,
+    "discount": 0,
+    "offerPrice": 22.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1618410320928-25228d811631"], "stockCount": 33 }
+    ]
+  },
+  {
+    "name": "1080p USB Webcam",
+    "description": "Full HD webcam with a built-in microphone for video meetings and online classes.",
+    "category": "Electronics",
+    "productType": "Webcam",
+    "baseColor": "Black",
+    "price": 69.99,
+    "discount": 10,
+    "offerPrice": 62.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1587826080692-f439cd0b70da"], "stockCount": 18 }
+    ]
+  },
+  {
+    "name": "4K Streaming Webcam",
+    "description": "High-resolution webcam with autofocus for streaming, conferencing, and content creation.",
+    "category": "Electronics",
+    "productType": "Webcam",
+    "baseColor": "Graphite",
+    "price": 149.99,
+    "discount": 8,
+    "offerPrice": 137.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Graphite", "imageUrls": ["https://images.unsplash.com/photo-1587826080692-f439cd0b70da"], "stockCount": 7 }
+    ]
+  },
+  {
+    "name": "Fitness Smartwatch",
+    "description": "Smartwatch with activity tracking, heart-rate monitoring, and smartphone notifications.",
+    "category": "Electronics",
+    "productType": "Wearable",
+    "baseColor": "Black",
+    "price": 229.99,
+    "discount": 15,
+    "offerPrice": 195.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1523275335684-37898b6baf30"], "stockCount": 12 },
+      { "color": "Rose Gold", "imageUrls": ["https://images.unsplash.com/photo-1523275335684-37898b6baf30"], "stockCount": 8 }
+    ]
+  },
+  {
+    "name": "GPS Sports Smartwatch",
+    "description": "Rugged GPS smartwatch with workout tracking and a long-lasting outdoor battery.",
+    "category": "Electronics",
+    "productType": "Wearable",
+    "baseColor": "Gray",
+    "price": 329.99,
+    "discount": 10,
+    "offerPrice": 296.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Gray", "imageUrls": ["https://images.unsplash.com/photo-1523275335684-37898b6baf30"], "stockCount": 9 },
+      { "color": "Green", "imageUrls": ["https://images.unsplash.com/photo-1523275335684-37898b6baf30"], "stockCount": 5 }
+    ]
+  },
+  {
+    "name": "Over-Ear Studio Headphones",
+    "description": "Wired studio headphones with a balanced sound profile and comfortable padded earcups.",
+    "category": "Electronics",
+    "productType": "Headphones",
+    "baseColor": "Black",
+    "price": 129.99,
+    "discount": 10,
+    "offerPrice": 116.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e"], "stockCount": 15 },
+      { "color": "Tan", "imageUrls": ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e"], "stockCount": 6 }
+    ]
+  },
+  {
+    "name": "Wired USB-C Earphones",
+    "description": "Lightweight in-ear headphones with USB-C audio and an inline microphone.",
+    "category": "Electronics",
+    "productType": "Earphones",
+    "baseColor": "White",
+    "price": 24.99,
+    "discount": 0,
+    "offerPrice": 24.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1590658268037-6bf12165a8df"], "stockCount": 32 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1590658268037-6bf12165a8df"], "stockCount": 25 }
+    ]
+  },
+  {
+    "name": "Wireless Charging Stand",
+    "description": "Adjustable wireless charging stand for compatible smartphones and earbuds.",
+    "category": "Electronics",
+    "productType": "Wireless Charger",
+    "baseColor": "White",
+    "price": 44.99,
+    "discount": 10,
+    "offerPrice": 40.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1591290619762-c588c8f05ec4"], "stockCount": 20 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1591290619762-c588c8f05ec4"], "stockCount": 14 }
+    ]
+  },
+  {
+    "name": "Magnetic Wireless Power Bank",
+    "description": "Slim magnetic portable battery for compatible smartphones with convenient wireless charging.",
+    "category": "Electronics",
+    "productType": "Power Bank",
+    "baseColor": "Blue",
+    "price": 69.99,
+    "discount": 5,
+    "offerPrice": 66.49,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5"], "stockCount": 11 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5"], "stockCount": 17 }
+    ]
+  },
+  {
+    "name": "Dual-Lens Indoor Security Camera",
+    "description": "Wi-Fi indoor security camera with motion alerts and two-way audio.",
+    "category": "Electronics",
+    "productType": "Security Camera",
+    "baseColor": "White",
+    "price": 89.99,
+    "discount": 10,
+    "offerPrice": 80.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1557324232-b8917d3c3dcb"], "stockCount": 13 }
+    ]
+  },
+  {
+    "name": "Outdoor Wi-Fi Security Camera",
+    "description": "Weather-resistant outdoor camera with night vision and smartphone monitoring.",
+    "category": "Electronics",
+    "productType": "Security Camera",
+    "baseColor": "White",
+    "price": 139.99,
+    "discount": 10,
+    "offerPrice": 125.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1557324232-b8917d3c3dcb"], "stockCount": 8 }
+    ]
+  },
+  {
+    "name": "4K Action Camera",
+    "description": "Compact action camera for recording travel, sports, and outdoor adventures in 4K.",
+    "category": "Electronics",
+    "productType": "Camera",
+    "baseColor": "Black",
+    "price": 249.99,
+    "discount": 12,
+    "offerPrice": 219.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32"], "stockCount": 10 },
+      { "color": "Gray", "imageUrls": ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32"], "stockCount": 4 }
+    ]
+  },
+  {
+    "name": "Mirrorless Digital Camera",
+    "description": "Interchangeable-lens mirrorless camera for photography, travel, and video.",
+    "category": "Electronics",
+    "productType": "Camera",
+    "baseColor": "Black",
+    "price": 899.99,
+    "discount": 5,
+    "offerPrice": 854.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32"], "stockCount": 6 }
+    ]
+  },
+  {
+    "name": "Portable Mini Projector",
+    "description": "Compact projector with wireless screen casting for movie nights and presentations.",
+    "category": "Electronics",
+    "productType": "Projector",
+    "baseColor": "White",
+    "price": 299.99,
+    "discount": 10,
+    "offerPrice": 269.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1535016120720-40c646be5580"], "stockCount": 7 },
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1535016120720-40c646be5580"], "stockCount": 5 }
+    ]
+  },
+  {
+    "name": "Wi-Fi 6 Dual-Band Router",
+    "description": "Dual-band Wi-Fi 6 router for reliable high-speed wireless coverage at home.",
+    "category": "Electronics",
+    "productType": "Router",
+    "baseColor": "Black",
+    "price": 159.99,
+    "discount": 10,
+    "offerPrice": 143.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1544197150-b99a580bb7a8"], "stockCount": 12 }
+    ]
+  },
+  {
+    "name": "Mesh Wi-Fi 6 Router System",
+    "description": "Two-unit mesh Wi-Fi system designed to extend wireless coverage across a home.",
+    "category": "Electronics",
+    "productType": "Router",
+    "baseColor": "White",
+    "price": 279.99,
+    "discount": 8,
+    "offerPrice": 257.59,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1544197150-b99a580bb7a8"], "stockCount": 9 }
+    ]
+  },
+  {
+    "name": "Smart LED Light Strip",
+    "description": "Color-changing LED light strip with app control and adjustable brightness.",
+    "category": "Electronics",
+    "productType": "Smart Home",
+    "baseColor": "Multicolor",
+    "price": 34.99,
+    "discount": 5,
+    "offerPrice": 33.24,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "Multicolor", "imageUrls": ["https://images.unsplash.com/photo-1550985616-10810253b84d"], "stockCount": 24 }
+    ]
+  },
+  {
+    "name": "Smart Wi-Fi Plug 2-Pack",
+    "description": "App-controlled smart plugs for scheduling and remotely managing household devices.",
+    "category": "Electronics",
+    "productType": "Smart Home",
+    "baseColor": "White",
+    "price": 24.99,
+    "discount": 0,
+    "offerPrice": 24.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1558002038-1055907df827"], "stockCount": 31 }
+    ]
+  },
+  {
+    "name": "Bluetooth Tracker 4-Pack",
+    "description": "Small Bluetooth item trackers that help locate keys, bags, and everyday essentials.",
+    "category": "Electronics",
+    "productType": "Tracker",
+    "baseColor": "White",
+    "price": 79.99,
+    "discount": 10,
+    "offerPrice": 71.99,
+    "listDate": "2026-11-22",
+    "variants": [
+      { "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1609592806596-b43bada2f7b3"], "stockCount": 16 }
+    ]
+  },
+  {
+    "name": "Classic Cotton Crew T-Shirt",
+    "description": "Soft everyday cotton T-shirt with a comfortable regular fit.",
+    "category": "Clothing",
+    "productType": "T-Shirt",
+    "baseColor": "White",
+    "price": 24.99,
+    "discount": 0,
+    "offerPrice": 24.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab"], "stockCount": 35 }, { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab"], "stockCount": 28 }]
+  },
+  {
+    "name": "Relaxed Fit Denim Jeans",
+    "description": "Versatile mid-rise denim jeans with a relaxed straight-leg cut.",
+    "category": "Clothing",
+    "productType": "Jeans",
+    "baseColor": "Blue",
+    "price": 69.99,
+    "discount": 10,
+    "offerPrice": 62.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1542272604-787c3835535d"], "stockCount": 20 }, { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1542272604-787c3835535d"], "stockCount": 15 }]
+  },
+  {
+    "name": "Lightweight Hooded Jacket",
+    "description": "Lightweight everyday jacket with a hood, zip front, and practical pockets.",
+    "category": "Clothing",
+    "productType": "Jacket",
+    "baseColor": "Olive",
+    "price": 89.99,
+    "discount": 5,
+    "offerPrice": 85.49,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Olive", "imageUrls": ["https://images.unsplash.com/photo-1551028719-00167b16eac5"], "stockCount": 12 }, { "color": "Navy", "imageUrls": ["https://images.unsplash.com/photo-1551028719-00167b16eac5"], "stockCount": 9 }]
+  },
+  {
+    "name": "Knit Everyday Cardigan",
+    "description": "A soft knit layer with a button front for cool days and relaxed evenings.",
+    "category": "Clothing",
+    "productType": "Cardigan",
+    "baseColor": "Cream",
+    "price": 74.99,
+    "discount": 0,
+    "offerPrice": 74.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Cream", "imageUrls": ["https://images.unsplash.com/photo-1434389677669-e08b4cac3105"], "stockCount": 14 }]
+  },
+  {
+    "name": "Minimal Leather Sneakers",
+    "description": "Clean low-top sneakers with a cushioned footbed for everyday wear.",
+    "category": "Shoes",
+    "productType": "Sneakers",
+    "baseColor": "White",
+    "price": 89.99,
+    "discount": 10,
+    "offerPrice": 80.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1542291026-7eec264c27ff"], "stockCount": 22 }, { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1542291026-7eec264c27ff"], "stockCount": 18 }]
+  },
+  {
+    "name": "Trail Running Shoes",
+    "description": "Grippy, supportive trail shoes designed for mixed terrain and outdoor runs.",
+    "category": "Shoes",
+    "productType": "Running Shoes",
+    "baseColor": "Gray",
+    "price": 119.99,
+    "discount": 5,
+    "offerPrice": 113.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Gray", "imageUrls": ["https://images.unsplash.com/photo-1552674605-db6ffd4facb5"], "stockCount": 16 }, { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1552674605-db6ffd4facb5"], "stockCount": 11 }]
+  },
+  {
+    "name": "Everyday Leather Ankle Boots",
+    "description": "Ankle boots with a sturdy sole and a versatile profile for daily outfits.",
+    "category": "Shoes",
+    "productType": "Boots",
+    "baseColor": "Brown",
+    "price": 139.99,
+    "discount": 15,
+    "offerPrice": 118.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Brown", "imageUrls": ["https://images.unsplash.com/photo-1543163521-1bf539c55dd2"], "stockCount": 10 }, { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1543163521-1bf539c55dd2"], "stockCount": 8 }]
+  },
+  {
+    "name": "Canvas Slip-On Shoes",
+    "description": "Easy slip-on canvas shoes with a flexible sole for casual everyday wear.",
+    "category": "Shoes",
+    "productType": "Casual Shoes",
+    "baseColor": "Navy",
+    "price": 54.99,
+    "discount": 0,
+    "offerPrice": 54.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Navy", "imageUrls": ["https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77"], "stockCount": 25 }]
+  },
+  {
+    "name": "Woven Cotton Cushion Cover",
+    "description": "Textured cotton cushion cover that adds a warm, natural accent to a room.",
+    "category": "Home",
+    "productType": "Home Decor",
+    "baseColor": "Beige",
+    "price": 29.99,
+    "discount": 0,
+    "offerPrice": 29.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Beige", "imageUrls": ["https://images.unsplash.com/photo-1584100936595-c0654b55a2e2"], "stockCount": 30 }, { "color": "Green", "imageUrls": ["https://images.unsplash.com/photo-1584100936595-c0654b55a2e2"], "stockCount": 18 }]
+  },
+  {
+    "name": "Stoneware Dinner Plate Set",
+    "description": "Set of four glazed stoneware dinner plates for everyday meals and gatherings.",
+    "category": "Home",
+    "productType": "Dinnerware",
+    "baseColor": "Sand",
+    "price": 48.99,
+    "discount": 10,
+    "offerPrice": 44.09,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Sand", "imageUrls": ["https://images.unsplash.com/photo-1603199506016-b9a594b593c0"], "stockCount": 17 }]
+  },
+  {
+    "name": "Soft Cotton Bath Towel Set",
+    "description": "Absorbent cotton bath towels with a soft feel and durable woven finish.",
+    "category": "Home",
+    "productType": "Bath",
+    "baseColor": "White",
+    "price": 39.99,
+    "discount": 5,
+    "offerPrice": 37.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1600369671236-e74521d4b6ad"], "stockCount": 24 }, { "color": "Sage", "imageUrls": ["https://images.unsplash.com/photo-1600369671236-e74521d4b6ad"], "stockCount": 12 }]
+  },
+  {
+    "name": "Braided Storage Basket",
+    "description": "Handwoven-style storage basket for organizing blankets, toys, or household essentials.",
+    "category": "Home",
+    "productType": "Storage",
+    "baseColor": "Natural",
+    "price": 34.99,
+    "discount": 0,
+    "offerPrice": 34.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Natural", "imageUrls": ["https://images.unsplash.com/photo-1590736969955-71cc94901144"], "stockCount": 19 }]
+  },
+  {
+    "name": "Everyday Crossbody Bag",
+    "description": "Compact crossbody bag with an adjustable strap and space for daily essentials.",
+    "category": "Accessories",
+    "productType": "Bag",
+    "baseColor": "Tan",
+    "price": 64.99,
+    "discount": 10,
+    "offerPrice": 58.49,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Tan", "imageUrls": ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62"], "stockCount": 13 }, { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62"], "stockCount": 15 }]
+  },
+  {
+    "name": "Polarized Everyday Sunglasses",
+    "description": "Lightweight sunglasses with polarized lenses for comfortable daily wear.",
+    "category": "Accessories",
+    "productType": "Sunglasses",
+    "baseColor": "Black",
+    "price": 49.99,
+    "discount": 0,
+    "offerPrice": 49.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1511499767150-a48a237f0083"], "stockCount": 21 }, { "color": "Tortoise", "imageUrls": ["https://images.unsplash.com/photo-1511499767150-a48a237f0083"], "stockCount": 12 }]
+  },
+  {
+    "name": "Classic Analog Wristwatch",
+    "description": "Minimal analog wristwatch with a clear dial and comfortable everyday strap.",
+    "category": "Accessories",
+    "productType": "Watch",
+    "baseColor": "Silver",
+    "price": 109.99,
+    "discount": 12,
+    "offerPrice": 96.79,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1524805444758-089113d48a6d"], "stockCount": 9 }, { "color": "Gold", "imageUrls": ["https://images.unsplash.com/photo-1524805444758-089113d48a6d"], "stockCount": 7 }]
+  },
+  {
+    "name": "Leather Belt with Brushed Buckle",
+    "description": "A versatile leather belt with a simple brushed-finish buckle.",
+    "category": "Accessories",
+    "productType": "Belt",
+    "baseColor": "Brown",
+    "price": 39.99,
+    "discount": 0,
+    "offerPrice": 39.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Brown", "imageUrls": ["https://images.unsplash.com/photo-1624222247344-550fb8c7fbb5"], "stockCount": 18 }]
+  },
+  {
+    "name": "Adjustable Yoga Mat",
+    "description": "Cushioned non-slip yoga mat for stretching, yoga, and home workouts.",
+    "category": "Sports",
+    "productType": "Fitness",
+    "baseColor": "Sage",
+    "price": 44.99,
+    "discount": 10,
+    "offerPrice": 40.49,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Sage", "imageUrls": ["https://images.unsplash.com/photo-1592432678016-e910b452f9a2"], "stockCount": 20 }, { "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1592432678016-e910b452f9a2"], "stockCount": 16 }]
+  },
+  {
+    "name": "Insulated Stainless Steel Bottle",
+    "description": "Reusable insulated bottle designed to keep drinks at a comfortable temperature.",
+    "category": "Sports",
+    "productType": "Outdoor Gear",
+    "baseColor": "Blue",
+    "price": 28.99,
+    "discount": 0,
+    "offerPrice": 28.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Blue", "imageUrls": ["https://images.unsplash.com/photo-1602143407151-7111542de8"], "stockCount": 32 }, { "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1602143407151-7111542de8"], "stockCount": 25 }]
+  },
+  {
+    "name": "Compact Adjustable Dumbbell",
+    "description": "Space-saving adjustable dumbbell for strength training at home.",
+    "category": "Sports",
+    "productType": "Fitness",
+    "baseColor": "Black",
+    "price": 79.99,
+    "discount": 5,
+    "offerPrice": 75.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1583454110551-21f2fa2afe61"], "stockCount": 11 }]
+  },
+  {
+    "name": "Everyday Moisturizing Cream",
+    "description": "Lightweight daily moisturizer made for a simple morning and evening skincare routine.",
+    "category": "Beauty",
+    "productType": "Skincare",
+    "baseColor": "White",
+    "price": 21.99,
+    "discount": 0,
+    "offerPrice": 21.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b"], "stockCount": 26 }]
+  },
+  {
+    "name": "Botanical Hand Wash",
+    "description": "Gentle liquid hand wash with a fresh botanical scent for everyday use.",
+    "category": "Beauty",
+    "productType": "Personal Care",
+    "baseColor": "Green",
+    "price": 14.99,
+    "discount": 0,
+    "offerPrice": 14.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Green", "imageUrls": ["https://images.unsplash.com/photo-1600428853876-fb5a850b444f"], "stockCount": 34 }]
+  },
+  {
+    "name": "Citrus Eau de Parfum",
+    "description": "Bright citrus fragrance balanced with soft woods for everyday wear.",
+    "category": "Beauty",
+    "productType": "Fragrance",
+    "baseColor": "Amber",
+    "price": 59.99,
+    "discount": 8,
+    "offerPrice": 55.19,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Amber", "imageUrls": ["https://images.unsplash.com/photo-1594035910387-fea47794261f"], "stockCount": 10 }]
+  },
+  {
+    "name": "Compact Drip Coffee Maker",
+    "description": "Simple countertop coffee maker for brewing a fresh pot at home.",
+    "category": "Kitchen",
+    "productType": "Small Appliance",
+    "baseColor": "Black",
+    "price": 79.99,
+    "discount": 10,
+    "offerPrice": 71.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Black", "imageUrls": ["https://images.unsplash.com/photo-1495474472287-4d71bcdd2085"], "stockCount": 12 }]
+  },
+  {
+    "name": "Stainless Steel Cookware Set",
+    "description": "Essential stainless steel pots and pans for everyday home cooking.",
+    "category": "Kitchen",
+    "productType": "Cookware",
+    "baseColor": "Silver",
+    "price": 149.99,
+    "discount": 15,
+    "offerPrice": 127.49,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1556911220-bff31c812dba"], "stockCount": 8 }]
+  },
+  {
+    "name": "Digital Kitchen Scale",
+    "description": "Compact digital scale for accurate ingredient measurements and baking.",
+    "category": "Kitchen",
+    "productType": "Kitchen Tools",
+    "baseColor": "White",
+    "price": 22.99,
+    "discount": 0,
+    "offerPrice": 22.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "White", "imageUrls": ["https://images.unsplash.com/photo-1556911220-e15b29be8c8f"], "stockCount": 23 }]
+  },
+  {
+    "name": "Wooden Building Blocks Set",
+    "description": "Colorful wooden building blocks for open-ended creative play.",
+    "category": "Toys",
+    "productType": "Building Toys",
+    "baseColor": "Multicolor",
+    "price": 34.99,
+    "discount": 0,
+    "offerPrice": 34.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Multicolor", "imageUrls": ["https://images.unsplash.com/photo-1596461404969-9ae70f2830c1"], "stockCount": 19 }]
+  },
+  {
+    "name": "Soft Plush Bear",
+    "description": "Soft plush companion made for playtime, story time, and gifting.",
+    "category": "Toys",
+    "productType": "Plush Toy",
+    "baseColor": "Brown",
+    "price": 19.99,
+    "discount": 5,
+    "offerPrice": 18.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Brown", "imageUrls": ["https://images.unsplash.com/photo-1559454403-b8fb88521f11"], "stockCount": 24 }]
+  },
+  {
+    "name": "Family Jigsaw Puzzle",
+    "description": "Illustrated 500-piece jigsaw puzzle for a relaxing screen-free activity.",
+    "category": "Toys",
+    "productType": "Puzzle",
+    "baseColor": "Multicolor",
+    "price": 17.99,
+    "discount": 0,
+    "offerPrice": 17.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Multicolor", "imageUrls": ["https://images.unsplash.com/photo-1606503153255-59d8b8b8219b"], "stockCount": 28 }]
+  },
+  {
+    "name": "Hardcover Daily Journal",
+    "description": "Lay-flat hardcover notebook for notes, plans, sketches, and daily journaling.",
+    "category": "Stationery",
+    "productType": "Notebook",
+    "baseColor": "Green",
+    "price": 18.99,
+    "discount": 0,
+    "offerPrice": 18.99,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Green", "imageUrls": ["https://images.unsplash.com/photo-1531346878377-a5be20888e57"], "stockCount": 40 }, { "color": "Tan", "imageUrls": ["https://images.unsplash.com/photo-1531346878377-a5be20888e57"], "stockCount": 22 }]
+  },
+  {
+    "name": "Insulated Stainless Lunch Box",
+    "description": "Reusable lunch container with a secure lid for meals at work, school, or outdoors.",
+    "category": "Kitchen",
+    "productType": "Food Storage",
+    "baseColor": "Silver",
+    "price": 32.99,
+    "discount": 10,
+    "offerPrice": 29.69,
+    "listDate": "2026-11-23",
+    "variants": [{ "color": "Silver", "imageUrls": ["https://images.unsplash.com/photo-1547592180-85f173990554"], "stockCount": 21 }]
+  }
+]

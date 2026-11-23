@@ -1,0 +1,325 @@
+services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+    container_name: eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    networks:
+      - ecom_service-net
+
+  mongodb:
+    image: mongo:8
+    container_name: product-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: product_service
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ecom_service-net
+
+  kafka:
+    image: apache/kafka:4.1.0
+    container_name: ecom-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,DOCKER://kafka:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LISTENERS: PLAINTEXT://:9092,DOCKER://:19092,CONTROLLER://:9093
+    ports:
+      - "9092:9092"
+    networks:
+      - ecom_service-net
+
+  mysql:
+    image: mysql:8.4
+    container_name: keycloak-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: auth_service
+      MYSQL_USER: auth_service
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ecom_service-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: keycloak
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      KC_DB: mysql
+      KC_DB_URL: jdbc:mysql://mysql:3306/keycloak
+      KC_DB_USERNAME: auth_service
+      KC_DB_PASSWORD: ${MYSQL_PASSWORD:-root}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}
+      KC_PROXY_HEADERS: xforwarded
+    ports:
+      - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ecom_service-net
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MYSQL_URL: jdbc:mysql://mysql:3306/auth_service
+      MYSQL_USER: auth_service
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ecomservice
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-auth-service}
+      KEYCLOAK_AUTH_CLIENT_ID: ${KEYCLOAK_AUTH_CLIENT_ID:-auth-service}
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - ecom_service-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      AUTH_SERVICE_URL: http://auth-service:8091
+      PRODUCT_SERVICE_URL: http://product-service:8097
+      ORDER_SERVICE_URL: http://order-service:8096
+      INVENTORY_SERVICE_URL: http://inventory-service:8094
+      NOTIFICATION_SERVICE_URL: http://notification-service:8095
+      DISPATCH_SERVICE_URL: http://dispatch-service:8093
+      CART_SERVICE_URL: http://cart-service:8092
+      KEYCLOAK_SERVICE_URL: http://keycloak:8080
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - eureka-server
+      - auth-service
+      - product-service
+      - order-service
+      - inventory-service
+      - notification-service
+      - dispatch-service
+      - cart-service
+      - keycloak
+    networks:
+      - ecom_service-net
+
+  product-service:
+    build:
+      context: ./product-service
+    container_name: product-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017/product_service
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8097:8097"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - keycloak
+      - eureka-server
+    networks:
+      - ecom_service-net
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017/order_service
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - kafka
+      - keycloak
+      - eureka-server
+    networks:
+      - ecom_service-net
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+    container_name: inventory-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017/inventory_service
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8094:8094"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - kafka
+      - keycloak
+      - eureka-server
+    networks:
+      - ecom_service-net
+
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017/notification_service
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@example.com}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
+      SMS_PROVIDER_URL: ${SMS_PROVIDER_URL:-}
+      SMS_AUTH_TOKEN: ${SMS_AUTH_TOKEN:-}
+      NOTIFICATION_DELIVERY_CRON: ${NOTIFICATION_DELIVERY_CRON:-0 0 9 * * *}
+      NOTIFICATION_DELIVERY_ZONE: ${NOTIFICATION_DELIVERY_ZONE:-Asia/Kolkata}
+      NOTIFICATION_DELIVERY_BATCH_SIZE: ${NOTIFICATION_DELIVERY_BATCH_SIZE:-500}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8095:8095"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - kafka
+      - keycloak
+      - eureka-server
+    networks:
+      - ecom_service-net
+
+  dispatch-service:
+    build:
+      context: ./dispatch-service
+    container_name: dispatch-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017/dispatch_service
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8093:8093"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - kafka
+      - keycloak
+      - eureka-server
+    networks:
+      - ecom_service-net
+
+  cart-service:
+    build:
+      context: ./cart-service
+    container_name: cart-service
+    restart: unless-stopped
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017/cart_service
+      PRODUCT_SERVICE_URL: http://product-service:8097
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
+    ports:
+      - "8092:8092"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - product-service
+      - keycloak
+      - eureka-server
+    networks:
+      - ecom_service-net
+
+volumes:
+  mysql_data:
+  mongodb_data:
+
+networks:
+  ecom_service-net:

@@ -1,0 +1,22 @@
+.swagger-ui .topbar {
+  display: none;
+}
+
+.swagger-ui .info .title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.swagger-ui .info .title::before {
+  content: "";
+  display: inline-block;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  background: url("/company-logo.svg") center / contain no-repeat;
+}
+
+.swagger-ui .info .title .version-stamp {
+  display: none;
+}

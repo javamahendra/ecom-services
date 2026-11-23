@@ -1,0 +1,1431 @@
+openapi: 3.0.3
+info:
+  title: E-commerce Services API
+  contact:
+    name: API Support
+  x-logo:
+    url: /company-logo.svg
+    altText: Company logo
+  version: 1.0.0
+  description: |
+    Consolidated API reference for the e-commerce application. All paths are served through
+    the API gateway. Authenticate with the auth endpoints, then use **Authorize** to provide
+    the Keycloak access token as a Bearer token. Product search and account creation are public.
+servers:
+  - url: /
+    description: Local
+  - url: https://dev-api.example.com
+    description: Development (replace with your API URL)
+  - url: https://qa-api.example.com
+    description: QA (replace with your API URL)
+  - url: https://api.example.com
+    description: Production (replace with your API URL)
+tags:
+  - name: API Gateway
+  - name: Authentication
+  - name: Users
+  - name: Products
+  - name: Orders
+  - name: Inventory
+  - name: Notifications
+  - name: Addresses
+  - name: Dispatch
+  - name: Cart
+  - name: Wishlist
+  - name: Identity provider
+paths:
+  /actuator/health:
+    get:
+      tags: [API Gateway]
+      summary: Check gateway health
+      security: []
+      responses:
+        '200':
+          description: Gateway health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: {type: string}
+  /actuator/info:
+    get:
+      tags: [API Gateway]
+      summary: Get gateway application information
+      security: []
+      responses:
+        '200':
+          description: Gateway information
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Sign in and retrieve tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Access and refresh tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access and refresh tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Refreshed tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke a refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Token revoked
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password recovery
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '202':
+          description: Recovery request accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/password-reset:
+    post:
+      tags: [Authentication]
+      summary: Reset the authenticated user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '204':
+          description: Password changed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users:
+    post:
+      tags: [Users]
+      summary: Create an account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Users]
+      summary: List users
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Users]
+      summary: Get a user
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Users]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      responses:
+        '204':
+          description: User deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/products:
+    get:
+      tags: [Products]
+      summary: Search, filter, sort, and paginate products
+      security: []
+      description: Pass multiple colors as repeated query parameters, for example `colors=Black&colors=Blue`.
+      parameters:
+        - in: query
+          name: search
+          schema: {type: string}
+        - in: query
+          name: category
+          schema: {type: string}
+        - in: query
+          name: productType
+          schema: {type: string}
+        - in: query
+          name: colors
+          description: Repeat for multiple colors
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: {type: string}
+        - in: query
+          name: minPrice
+          schema: {type: number, format: double}
+        - in: query
+          name: maxPrice
+          schema: {type: number, format: double}
+        - in: query
+          name: inStock
+          schema: {type: boolean}
+        - in: query
+          name: minStock
+          schema: {type: integer, minimum: 0}
+        - in: query
+          name: listedFrom
+          schema: {type: string, format: date}
+        - in: query
+          name: listedTo
+          schema: {type: string, format: date}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - in: query
+          name: sortBy
+          schema: {type: string, default: createdAt}
+        - $ref: '#/components/parameters/Direction'
+      responses:
+        '200':
+          description: Product page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Products]
+      summary: Create a product (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Products]
+      summary: Get product details
+      security: []
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Products]
+      summary: Replace product details (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags: [Products]
+      summary: Delete a product (admin)
+      responses:
+        '204':
+          description: Product deleted
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/{id}/variants:
+    post:
+      tags: [Products]
+      summary: Add a color variant (admin)
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VariantRequest'
+      responses:
+        '200':
+          description: Product with new variant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/{id}/variants/{variantId}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - in: path
+        name: variantId
+        required: true
+        schema: {type: string, format: uuid}
+    put:
+      tags: [Products]
+      summary: Update color variant (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VariantRequest'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags: [Products]
+      summary: Delete color variant (admin)
+      responses:
+        '200':
+          description: Product after variant removal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/{id}/variants/{variantId}/stock:
+    patch:
+      tags: [Products]
+      summary: Update variant stock count (admin)
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/VariantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stockCount]
+              properties:
+                stockCount: {type: integer, minimum: 0}
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/{id}/variants/{variantId}/images:
+    patch:
+      tags: [Products]
+      summary: Replace variant image URLs (admin)
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/VariantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imageUrls]
+              properties:
+                imageUrls:
+                  type: array
+                  maxItems: 20
+                  items: {type: string, maxLength: 2048}
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/orders:
+    get:
+      tags: [Orders]
+      summary: List the current user's orders (admins can search all)
+      parameters:
+        - in: query
+          name: status
+          schema: {type: string}
+        - in: query
+          name: search
+          schema: {type: string}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - in: query
+          name: sortBy
+          schema: {type: string, default: createdAt}
+        - $ref: '#/components/parameters/Direction'
+      responses:
+        '200':
+          description: Order page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Orders]
+      summary: Create an order
+      description: Order creation triggers asynchronous inventory reservation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order accepted for inventory processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/orders/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Orders]
+      summary: Get an order
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/orders/{id}/cancel:
+    post:
+      tags: [Orders]
+      summary: Request order cancellation and inventory release
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Order cancellation requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/inventory:
+    get:
+      tags: [Inventory]
+      summary: Search inventory by product, color, and available quantity
+      parameters:
+        - in: query
+          name: productId
+          schema: {type: string}
+        - in: query
+          name: color
+          schema: {type: string}
+        - in: query
+          name: minQuantity
+          schema: {type: integer, minimum: 0}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - in: query
+          name: sortBy
+          schema: {type: string, default: updatedAt}
+        - $ref: '#/components/parameters/Direction'
+      responses:
+        '200':
+          description: Inventory page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+    put:
+      tags: [Inventory]
+      summary: Create or update inventory record (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryRequest'
+      responses:
+        '200':
+          description: Updated inventory record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: List the current user's notifications (admins can search all)
+      parameters:
+        - in: query
+          name: orderId
+          schema: {type: string}
+        - in: query
+          name: type
+          schema: {type: string}
+        - in: query
+          name: search
+          schema: {type: string}
+        - in: query
+          name: deliveryDate
+          schema: {type: string, format: date}
+        - in: query
+          name: deliveryStatus
+          schema: {type: string, enum: [PENDING, PROCESSING, COMPLETED, FAILED]}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - in: query
+          name: sortBy
+          schema: {type: string, default: createdAt}
+        - $ref: '#/components/parameters/Direction'
+      responses:
+        '200':
+          description: Notification page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+  /api/notifications/schedule:
+    post:
+      tags: [Notifications]
+      summary: Schedule an email/SMS notification (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleNotificationRequest'
+      responses:
+        '201':
+          description: Notification queued for its delivery date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/notifications/{eventId}/schedule:
+    patch:
+      tags: [Notifications]
+      summary: Reschedule a pending or failed notification (admin)
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deliveryDate]
+              properties:
+                deliveryDate: {type: string, format: date}
+      responses:
+        '200':
+          description: Rescheduled notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/notifications/delivery/days:
+    get:
+      tags: [Notifications]
+      summary: Get notification counts grouped by delivery date and status (admin)
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema: {type: string, format: date}
+        - in: query
+          name: to
+          required: true
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Daily delivery counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    deliveryDate: {type: string, format: date}
+                    deliveryStatus: {type: string}
+                    count: {type: integer}
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/notifications/delivery/run:
+    post:
+      tags: [Notifications]
+      summary: Run due notification delivery through a date (admin)
+      parameters:
+        - in: query
+          name: date
+          required: true
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Number of notifications successfully delivered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date: {type: string, format: date}
+                  completed: {type: integer}
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/notifications/{eventId}/retry:
+    post:
+      tags: [Notifications]
+      summary: Retry failed delivery channels (admin)
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Updated delivery record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/addresses:
+    get:
+      tags: [Addresses]
+      summary: List the current user's addresses
+      responses:
+        '200':
+          description: User addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+    post:
+      tags: [Addresses]
+      summary: Add an address to the current user's account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      responses:
+        '200':
+          description: Saved address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/addresses/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      tags: [Addresses]
+      summary: Update an address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      responses:
+        '200':
+          description: Updated address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Addresses]
+      summary: Delete an address
+      responses:
+        '204':
+          description: Address deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/dispatches:
+    get:
+      tags: [Dispatch]
+      summary: Search dispatch records (admins can search all)
+      parameters:
+        - in: query
+          name: status
+          schema: {type: string}
+        - in: query
+          name: search
+          schema: {type: string}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - in: query
+          name: sortBy
+          schema: {type: string, default: createdAt}
+        - $ref: '#/components/parameters/Direction'
+      responses:
+        '200':
+          description: Dispatch page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+  /api/dispatches/{orderId}:
+    get:
+      tags: [Dispatch]
+      summary: Get dispatch details for an order
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Dispatch record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispatch'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/dispatches/{orderId}/status:
+    patch:
+      tags: [Dispatch]
+      summary: Update dispatch status (admin)
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchStatusRequest'
+      responses:
+        '200':
+          description: Updated dispatch record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispatch'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/cart:
+    get:
+      tags: [Cart]
+      summary: Get current user's cart and subtotal
+      responses:
+        '200':
+          description: Cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+  /api/cart/items:
+    post:
+      tags: [Cart]
+      summary: Add an item; adding an existing product variant increases its quantity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Cart]
+      summary: Clear all cart items
+      responses:
+        '200':
+          description: Empty cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+  /api/cart/items/{productId}/{variantId}:
+    parameters:
+      - in: path
+        name: productId
+        required: true
+        schema: {type: string}
+      - $ref: '#/components/parameters/VariantId'
+    put:
+      tags: [Cart]
+      summary: Set the quantity of a cart item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuantityRequest'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Cart]
+      summary: Remove a cart item
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/wishlist:
+    get:
+      tags: [Wishlist]
+      summary: Get current user's wishlist
+      responses:
+        '200':
+          description: Wishlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+  /api/wishlist/items:
+    post:
+      tags: [Wishlist]
+      summary: Add a product variant to wishlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWishlistItemRequest'
+      responses:
+        '200':
+          description: Updated wishlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+  /api/wishlist/items/{productId}/{variantId}:
+    delete:
+      tags: [Wishlist]
+      summary: Remove an item from wishlist
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema: {type: string}
+        - $ref: '#/components/parameters/VariantId'
+      responses:
+        '200':
+          description: Updated wishlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/wishlist/items/{productId}/{variantId}/move-to-cart:
+    post:
+      tags: [Wishlist]
+      summary: Move a wishlist item into the cart
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema: {type: string}
+        - $ref: '#/components/parameters/VariantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuantityRequest'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /realms/{realm}/protocol/openid-connect/token:
+    post:
+      tags: [Identity provider]
+      summary: Keycloak token endpoint
+      description: Direct Keycloak OAuth2/OIDC token endpoint proxied by the gateway. Prefer /api/auth/login for application login.
+      security: []
+      parameters:
+        - in: path
+          name: realm
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type: {type: string}
+                client_id: {type: string}
+                client_secret: {type: string}
+                username: {type: string}
+                password: {type: string, format: password}
+                refresh_token: {type: string}
+      responses:
+        '200':
+          description: OAuth2 token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: {type: string}
+    VariantId:
+      in: path
+      name: variantId
+      required: true
+      schema: {type: string, format: uuid}
+    Page:
+      in: query
+      name: page
+      schema: {type: integer, minimum: 0, default: 0}
+    Size:
+      in: query
+      name: size
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    Direction:
+      in: query
+      name: direction
+      schema: {type: string, enum: [asc, desc], default: desc}
+  responses:
+    BadRequest:
+      description: Invalid request or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: Caller does not have permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Conflict:
+      description: Request conflicts with current state or stock
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        timestamp: {type: string, format: date-time}
+        status: {type: integer}
+        error: {type: string}
+        code: {type: string}
+        message: {type: string}
+        path: {type: string}
+        requestId: {type: string}
+        validationErrors:
+          type: object
+          additionalProperties: {type: string}
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: {type: string}
+        password: {type: string, format: password}
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string}
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, format: email}
+    PasswordResetRequest:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword: {type: string, format: password, minLength: 12, maxLength: 128}
+    TokenResponse:
+      type: object
+      properties:
+        access_token: {type: string}
+        refresh_token: {type: string}
+        expires_in: {type: integer, format: int64}
+        refresh_expires_in: {type: integer, format: int64}
+        token_type: {type: string}
+    CreateUserRequest:
+      type: object
+      required: [password, username, email, firstName, lastName]
+      properties:
+        password: {type: string, format: password, minLength: 12, maxLength: 128}
+        username: {type: string, minLength: 1, maxLength: 100}
+        email: {type: string, format: email}
+        firstName: {type: string, maxLength: 100}
+        lastName: {type: string, maxLength: 100}
+        phone: {type: string}
+    UserRequest:
+      type: object
+      required: [username, email, firstName, lastName]
+      properties:
+        username: {type: string}
+        email: {type: string, format: email}
+        firstName: {type: string}
+        lastName: {type: string}
+        phone: {type: string}
+    User:
+      type: object
+      properties:
+        id: {type: string}
+        username: {type: string}
+        email: {type: string, format: email}
+        firstName: {type: string}
+        lastName: {type: string}
+        phone: {type: string}
+    ProductRequest:
+      type: object
+      required: [name, category, productType, baseColor, price, discount, offerPrice, listDate, variants]
+      properties:
+        name: {type: string, maxLength: 200}
+        description: {type: string}
+        category: {type: string}
+        productType: {type: string}
+        baseColor: {type: string}
+        price: {type: number, minimum: 0.01}
+        discount: {type: number, minimum: 0, maximum: 100}
+        offerPrice: {type: number, minimum: 0}
+        listDate: {type: string, format: date}
+        variants:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/VariantRequest'
+    VariantRequest:
+      type: object
+      required: [color, imageUrls, stockCount]
+      properties:
+        color: {type: string}
+        imageUrls:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: {type: string, maxLength: 2048}
+        stockCount: {type: integer, minimum: 0}
+    ProductVariant:
+      allOf:
+        - $ref: '#/components/schemas/VariantRequest'
+        - type: object
+          properties:
+            id: {type: string, format: uuid}
+            inStock: {type: boolean}
+    Product:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+        description: {type: string}
+        category: {type: string}
+        productType: {type: string}
+        baseColor: {type: string}
+        price: {type: number}
+        discount: {type: number}
+        offerPrice: {type: number}
+        listDate: {type: string, format: date}
+        inStock: {type: boolean}
+        stockCount: {type: integer}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+    ProductPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        page: {type: integer}
+        size: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+        first: {type: boolean}
+        last: {type: boolean}
+    Page:
+      type: object
+      description: Paginated service response. Item schema depends on the endpoint.
+      properties:
+        content: {type: array, items: {type: object}}
+        page: {type: integer}
+        size: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+        first: {type: boolean}
+        last: {type: boolean}
+    CreateOrderRequest:
+      type: object
+      required: [items, shippingAddress]
+      properties:
+        email: {type: string, format: email}
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required: [productId, variantId, productName, color, quantity, unitPrice]
+            properties:
+              productId: {type: string}
+              variantId: {type: string}
+              productName: {type: string}
+              color: {type: string}
+              quantity: {type: integer, minimum: 1}
+              unitPrice: {type: number, minimum: 0.01}
+        shippingAddress:
+          type: object
+          required: [recipientName, phone, line1, city, region, postalCode, country]
+          properties:
+            recipientName: {type: string}
+            phone: {type: string}
+            line1: {type: string}
+            line2: {type: string}
+            city: {type: string}
+            region: {type: string}
+            postalCode: {type: string}
+            country: {type: string}
+    Order:
+      type: object
+      properties:
+        id: {type: string}
+        userId: {type: string}
+        email: {type: string}
+        items: {type: array, items: {type: object}}
+        shippingAddress: {type: object}
+        total: {type: number}
+        status: {type: string}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    InventoryRequest:
+      type: object
+      required: [productId, variantId, productName, color, quantity]
+      properties:
+        productId: {type: string}
+        variantId: {type: string}
+        productName: {type: string}
+        color: {type: string}
+        quantity: {type: integer, minimum: 0}
+    InventoryItem:
+      allOf:
+        - $ref: '#/components/schemas/InventoryRequest'
+        - type: object
+          properties:
+            id: {type: string}
+            inStock: {type: boolean}
+            updatedAt: {type: string, format: date-time}
+    ScheduleNotificationRequest:
+      type: object
+      required: [eventType, userId, deliveryDate, data]
+      properties:
+        eventType: {type: string}
+        userId: {type: string}
+        email: {type: string, format: email}
+        phone: {type: string}
+        orderId: {type: string}
+        deliveryDate: {type: string, format: date}
+        data:
+          type: object
+          additionalProperties: {type: string}
+    Notification:
+      type: object
+      properties:
+        eventId: {type: string}
+        type: {type: string}
+        userId: {type: string}
+        deliveryDate: {type: string, format: date}
+        deliveryStatus: {type: string}
+        emailStatus: {type: string}
+        smsStatus: {type: string}
+        createdAt: {type: string, format: date-time}
+    AddressRequest:
+      type: object
+      required: [label, recipientName, phone, line1, city, region, postalCode, country]
+      properties:
+        label: {type: string}
+        recipientName: {type: string}
+        phone: {type: string}
+        line1: {type: string}
+        line2: {type: string}
+        city: {type: string}
+        region: {type: string}
+        postalCode: {type: string}
+        country: {type: string}
+        defaultAddress: {type: boolean}
+    Address:
+      allOf:
+        - $ref: '#/components/schemas/AddressRequest'
+        - type: object
+          properties:
+            id: {type: string}
+            userId: {type: string}
+    DispatchStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: {type: string}
+        trackingNumber: {type: string}
+        note: {type: string}
+    Dispatch:
+      type: object
+      properties:
+        orderId: {type: string}
+        userId: {type: string}
+        status: {type: string}
+        trackingNumber: {type: string}
+        history: {type: array, items: {type: object}}
+    AddCartItemRequest:
+      type: object
+      required: [productId, variantId, quantity]
+      properties:
+        productId: {type: string}
+        variantId: {type: string, format: uuid}
+        quantity: {type: integer, minimum: 1}
+    AddWishlistItemRequest:
+      type: object
+      required: [productId, variantId]
+      properties:
+        productId: {type: string}
+        variantId: {type: string, format: uuid}
+    QuantityRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: {type: integer, minimum: 1}
+    ShoppingItem:
+      type: object
+      properties:
+        productId: {type: string}
+        variantId: {type: string}
+        productName: {type: string}
+        category: {type: string}
+        productType: {type: string}
+        color: {type: string}
+        unitPrice: {type: number}
+        imageUrls: {type: array, items: {type: string}}
+        inStock: {type: boolean}
+        availableStock: {type: integer}
+        quantity: {type: integer}
+        addedAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ShoppingList:
+      type: object
+      properties:
+        userId: {type: string}
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingItem'
+        itemCount: {type: integer}
+        subtotal: {type: number}
+        updatedAt: {type: string, format: date-time}
+security:
+  - bearerAuth: []

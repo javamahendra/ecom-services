@@ -1,0 +1,1 @@
+Password reset requested for your Ecom Service account. Use the secure reset link from the identity service.
