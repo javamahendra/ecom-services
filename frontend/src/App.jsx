@@ -73,9 +73,15 @@ export default function App() {
           </Route>
           <Route path="/admin" element={<RequireAuth role="admin"><PanelLayout panel="admin" /></RequireAuth>}>
             <Route index element={<AdminDashboard />} />
+            <Route path="products" element={<AdminDashboard view="products" />} />
+            <Route path="orders" element={<AdminDashboard view="orders" />} />
+            <Route path="users" element={<AdminDashboard view="users" />} />
+            <Route path="banner" element={<AdminDashboard view="banner" />} />
           </Route>
           <Route path="/manager" element={<RequireAuth role="manager"><PanelLayout panel="manager" /></RequireAuth>}>
             <Route index element={<AdminDashboard managerMode />} />
+            <Route path="products" element={<AdminDashboard managerMode view="products" />} />
+            <Route path="orders" element={<AdminDashboard managerMode view="orders" />} />
           </Route>
           <Route path="*" element={<main className="mx-auto max-w-3xl px-6 py-32 text-center"><h1 className="text-3xl text-[#29382d]">Page not found.</h1><a href="/" className="mt-5 inline-block text-sm text-[#52644f]">Return to the store</a></main>} />
         </Routes>

@@ -53,7 +53,7 @@ public class ProductCatalogClient {
         }
     }
 
-    private record Product(String id, String name, String category, String productType, BigDecimal price,
+    private record Product(String id, String productCode, String name, String category, String productType, BigDecimal price,
                            BigDecimal offerPrice, List<Variant> variants) {}
     private record Variant(UUID id, String color, List<String> imageUrls, boolean inStock, int stockCount) {}
     public record ProductSnapshot(String productId, String productName, String category, String productType,

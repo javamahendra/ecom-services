@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,16 +23,21 @@ public class ProductSampleSeeder implements ApplicationRunner {
     private final ObjectMapper objectMapper;
     private final ProductRepository products;
     private final ProductService productService;
+    private final MongoTemplate mongo;
 
     public ProductSampleSeeder(
-            ObjectMapper objectMapper, ProductRepository products, ProductService productService) {
+            ObjectMapper objectMapper, ProductRepository products, ProductService productService,
+            MongoTemplate mongo) {
         this.objectMapper = objectMapper;
         this.products = products;
         this.productService = productService;
+        this.mongo = mongo;
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        productService.backfillProductCodes();
+        mongo.indexOps("products").ensureIndex(new Index().on("productCode", Sort.Direction.ASC).unique());
         List<ProductRequest> samples;
         try (var input = new ClassPathResource(SAMPLE_PRODUCTS_RESOURCE).getInputStream()) {
             samples = objectMapper.readValue(input, new TypeReference<>() {});

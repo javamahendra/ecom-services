@@ -1,5 +1,5 @@
-import { Image, Package, Pencil, Plus, Search, Trash2, Users, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { FileSpreadsheet, Image, Package, Pencil, Plus, Search, Trash2, Upload, Users, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,7 @@ import { z } from "zod";
 import { normalizeProduct } from "../../api";
 import LoadingState from "../../components/LoadingState";
 import { getBanner, updateBanner } from "../../services/bannerService";
-import { createProduct as createProductRequest, deleteProduct as deleteProductRequest, getProducts, updateProduct as updateProductRequest } from "../../services/productService";
+import { createProduct as createProductRequest, deleteProduct as deleteProductRequest, getProducts, getStockImportHistory, importProductStock, updateProduct as updateProductRequest } from "../../services/productService";
 import { createUser as createUserRequest, getUsers, updateUserRole, updateUserStatus } from "../../services/userService";
 import { cancelOrder, getDispatches, getOrders, updateDispatchStatus } from "../../services/orderService";
 
@@ -30,6 +30,257 @@ const fieldClass = "block text-xs text-[#5d655a]";
 const managedRoles = ["admin", "manager", "user"];
 const CATALOG_PAGE_SIZE = 20;
 const ORDER_PAGE_SIZE = 10;
+
+function StockImportPanel({ token, onImported }) {
+  const currentUser = useSelector((state) => state.auth);
+  const userName = currentUser?.username || currentUser?.email || "you";
+  const previousImportStatuses = useRef(new Map());
+  const initialHistoryLoaded = useRef(false);
+  const [file, setFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
+  const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyPages, setHistoryPages] = useState(0);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    let polling = false;
+    const loadHistory = async (showLoading = false) => {
+      if (polling) return;
+      polling = true;
+      if (showLoading) setHistoryLoading(true);
+      try {
+        const response = await getStockImportHistory(historyPage, token);
+        if (active) {
+          const entries = response?.content || [];
+          const isCurrentUser = (entry) => [currentUser?.username, currentUser?.email]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase() === (entry.uploadedBy || "").toLowerCase());
+          if (initialHistoryLoaded.current && historyPage === 0) {
+            entries.forEach((entry) => {
+              const previousStatus = previousImportStatuses.current.get(entry.id);
+              const isActive = ["PROCESSING", "APPLYING"].includes(entry.status);
+              if (!previousStatus && !isCurrentUser(entry)) {
+                if (isActive) {
+                  toast.info(`${entry.uploadedBy} started stock upload: ${entry.fileName}`);
+                } else {
+                  const message = `${entry.uploadedBy} finished ${entry.fileName}: ${entry.successRows} succeeded, ${entry.failureRows} failed.`;
+                  if (entry.failureRows > 0) toast.warn(message);
+                  else toast.success(message);
+                }
+              } else if (previousStatus && ["PROCESSING", "APPLYING"].includes(previousStatus) && !isActive
+                && !isCurrentUser(entry)) {
+                const message = `${entry.uploadedBy} finished ${entry.fileName}: ${entry.successRows} succeeded, ${entry.failureRows} failed.`;
+                if (entry.failureRows > 0) toast.warn(message);
+                else toast.success(message);
+              }
+              previousImportStatuses.current.set(entry.id, entry.status);
+            });
+          } else if (!initialHistoryLoaded.current) {
+            entries.forEach((entry) => previousImportStatuses.current.set(entry.id, entry.status));
+            if (historyPage === 0) initialHistoryLoaded.current = true;
+          } else {
+            entries.forEach((entry) => previousImportStatuses.current.set(entry.id, entry.status));
+          }
+          setHistory(entries);
+          setHistoryPages(response?.totalPages || 0);
+        }
+      } catch (error) {
+        if (active && showLoading) toast.error(error.message || "Could not load stock import history.");
+      } finally {
+        polling = false;
+        if (active && showLoading) setHistoryLoading(false);
+      }
+    };
+    loadHistory(true);
+    const interval = window.setInterval(() => loadHistory(), 2000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [currentUser?.email, currentUser?.username, historyPage, historyRefresh, token]);
+
+  const chooseFile = (nextFile) => {
+    if (!nextFile) return;
+    if (!/\.(csv|xlsx|xls)$/i.test(nextFile.name)) {
+      setFile(null);
+      setResult(null);
+      toast.error("Choose a CSV or Excel file (.csv, .xlsx, .xls).");
+      return;
+    }
+    if (nextFile.size > 10 * 1024 * 1024) {
+      setFile(null);
+      setResult(null);
+      toast.error("Stock import files must be 10 MB or smaller.");
+      return;
+    }
+    setFile(nextFile);
+    setResult(null);
+  };
+
+  const upload = async () => {
+    if (!file) {
+      toast.error("Choose a stock file to upload.");
+      return;
+    }
+    setUploading(true);
+    setUploadPercent(0);
+    toast.info(`Stock upload started by ${userName || "you"}: ${file.name}`);
+    try {
+      const imported = await importProductStock(file, token, (event) => {
+        if (event.total) setUploadPercent(Math.min(100, Math.round((event.loaded * 100) / event.total)));
+      });
+      setResult(imported);
+      setFile(null);
+      onImported();
+      setHistoryPage(0);
+      setHistoryRefresh((current) => current + 1);
+      const message = `Stock upload finished: ${imported.successRows} succeeded, ${imported.failureRows} failed.`;
+      if (imported.failureRows > 0) toast.warn(message);
+      else toast.success(message);
+    } catch (error) {
+      setHistoryPage(0);
+      setHistoryRefresh((current) => current + 1);
+      toast.error(`Stock upload failed: ${error.message || "Could not import stock."}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const activeImports = history.filter((item) => ["PROCESSING", "APPLYING"].includes(item.status));
+  return (
+    <section className="mt-8 border border-[#e4e6de] bg-white p-5 sm:p-6">
+      <div className="flex items-center gap-2"><FileSpreadsheet size={17} className="text-[#52644f]" /><h2 className="text-lg font-medium text-[#354237]">Bulk stock update</h2></div>
+      <p className="mt-1 text-xs text-[#858a80]">Upload CSV or Excel rows using each product code and color variant. Invalid files are rejected without applying changes.</p>
+      <div
+        onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+        onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
+        onDrop={(event) => { event.preventDefault(); setDragging(false); chooseFile(event.dataTransfer.files?.[0]); }}
+        className={`mt-4 flex flex-col items-center border border-dashed p-6 text-center transition-colors ${dragging ? "border-[#52644f] bg-[#f4f5f0]" : "border-[#cfd4c9] bg-[#fbfbf8]"}`}
+      >
+        <Upload size={20} className="text-[#71816d]" />
+        <p className="mt-2 text-sm text-[#52644f]">Drop your stock sheet here</p>
+        <p className="mt-1 text-xs text-[#858a80]">CSV, XLSX, or XLS · up to 10 MB · maximum 5,000 rows</p>
+        <label className="mt-3 cursor-pointer border border-[#dfe2d9] bg-white px-3 py-2 text-xs text-[#52644f] hover:bg-[#f4f5f0]">
+          Browse files
+          <input type="file" accept=".csv,.xlsx,.xls" className="sr-only" onChange={(event) => { chooseFile(event.target.files?.[0]); event.target.value = ""; }} />
+        </label>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 text-xs text-[#687064]">
+          {file ? <span className="truncate">{file.name} · {(file.size / 1024).toFixed(1)} KB</span> : <span>Columns: <code>productCode,color,stockCount</code></span>}
+        </div>
+        <div className="flex items-center gap-3">
+          <a href="data:text/csv;charset=utf-8,productCode%2Ccolor%2CstockCount%0A" download="stock-import-template.csv"
+            className="text-xs text-[#52644f] underline underline-offset-2">Download CSV template</a>
+          <button type="button" disabled={!file || uploading} onClick={upload}
+            className="h-9 bg-[#314638] px-4 text-xs font-medium text-white hover:bg-[#25372b] disabled:cursor-not-allowed disabled:opacity-50">
+            {uploading ? "Uploading…" : "Update stock"}
+          </button>
+        </div>
+      </div>
+      {uploading && <div role="status" aria-live="polite" className="mt-4 border border-[#dfe2d9] bg-[#fbfbf8] p-3">
+        <div className="flex items-center justify-between text-xs text-[#52644f]">
+          <span>{uploadPercent < 100 ? "Uploading file…" : "File received; applying stock updates…"}</span>
+          <span>{uploadPercent}%</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden bg-[#e4e6de]">
+          <div className="h-full bg-[#52644f] transition-[width]" style={{ width: `${uploadPercent}%` }} />
+        </div>
+      </div>}
+      {activeImports.length > 0 && <div className="mt-4 space-y-2" aria-live="polite">
+        {activeImports.map((item) => (
+          <div key={item.id} className="border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+            <div className="flex flex-wrap justify-between gap-2">
+              <span><strong>{item.uploadedBy}</strong> is uploading/processing <strong>{item.fileName}</strong></span>
+              <span>{item.processedRows} / {item.totalRows} rows · {item.progressPercent}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden bg-blue-100">
+              <div className="h-full bg-blue-700 transition-[width]" style={{ width: `${item.progressPercent}%` }} />
+            </div>
+            <p className="mt-1">{item.successRows} succeeded · {item.failureRows} failed so far</p>
+          </div>
+        ))}
+      </div>}
+      {result && <div role="status" aria-live="polite" className={`mt-3 border p-3 text-xs ${result.failureRows > 0 ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+        Import {result.importId}: {result.totalRows} rows processed, {result.successRows} succeeded, {result.failureRows} failed.
+        <ul className="mt-2 max-h-40 list-inside list-disc space-y-1 overflow-y-auto">
+          {(result.updates || []).slice(0, 50).map((update, index) => (
+            <li key={`${update.productCode}-${update.color}-${index}`}>
+              Row {update.rowNumber}: {update.productCode} · {update.color}: {update.previousStockCount} → {update.stockCount}
+            </li>
+          ))}
+        </ul>
+        {result.updates?.length > 50 && <span className="mt-1 block">Showing the first 50 successful rows.</span>}
+        {result.failures?.length > 0 && <div className="mt-3 border-t border-amber-200 pt-2">
+          <p className="font-medium">Failed rows</p>
+          <ul className="mt-1 max-h-32 list-inside list-disc space-y-1 overflow-y-auto">
+            {result.failures.slice(0, 50).map((failure, index) => (
+              <li key={`${failure.rowNumber}-${index}`}>Row {failure.rowNumber}: {failure.productCode} · {failure.color} — {failure.message}</li>
+            ))}
+          </ul>
+          {result.failures.length > 50 && <span className="mt-1 block">Showing the first 50 failed rows.</span>}
+        </div>}
+      </div>}
+      <div className="mt-6 border-t border-[#e4e6de] pt-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-medium text-[#354237]">Stock import history</h3>
+            <p className="mt-1 text-xs text-[#858a80]">Uploader, time, source file, and product/variant stock changes.</p>
+          </div>
+          <button type="button" onClick={() => setHistoryRefresh((current) => current + 1)}
+            className="text-xs text-[#52644f] underline underline-offset-2">Refresh history</button>
+        </div>
+        {historyLoading ? <LoadingState label="Loading import history…" compact /> : history.length === 0 ? (
+          <p className="mt-3 text-xs text-[#858a80]">No stock uploads recorded yet.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {history.map((item) => (
+              <details key={item.id} className="border border-[#e4e6de] bg-[#fbfbf8] px-3 py-2">
+                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-[#52644f]">
+                  <span className="min-w-0 truncate font-medium">{item.fileName}</span>
+                  <span>{item.status === "COMPLETED" || item.status === "COMPLETED_WITH_ERRORS" || item.status === "FAILED"
+                    ? `${item.successRows} succeeded · ${item.failureRows} failed`
+                    : `${item.status} · ${item.progressPercent}%`}</span>
+                  <span>{item.uploadedAt ? new Date(item.uploadedAt).toLocaleString() : "Time unavailable"}</span>
+                </summary>
+                <div className="mt-2 space-y-1 border-t border-[#e4e6de] pt-2 text-xs text-[#687064]">
+                  <p>Updated by {item.uploadedBy || item.uploadedById} · {item.fileSize?.toLocaleString()} bytes</p>
+                  <p>{item.processedRows} / {item.totalRows} rows processed · {item.successRows} succeeded · {item.failureRows} failed</p>
+                  {item.sha256 && <p className="break-all font-mono text-[10px]">SHA-256: {item.sha256}</p>}
+                  {item.failureReason && <p className="text-red-700">Error: {item.failureReason}</p>}
+                  {(item.changes || []).map((change, index) => (
+                    <p key={`${change.productCode}-${change.color}-${index}`}>
+                      {change.productCode} · {change.productName} · {change.category} / {change.productType} · {change.color}:
+                      {" "}{change.previousStockCount} → {change.stockCount}
+                    </p>
+                  ))}
+                  {(item.failures || []).map((failure, index) => (
+                    <p key={`failure-${failure.rowNumber}-${index}`} className="text-red-700">
+                      Row {failure.rowNumber}: {failure.productCode} · {failure.color} — {failure.message}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            ))}
+            {historyPages > 1 && <div className="flex items-center justify-between pt-2">
+              <button type="button" disabled={historyPage === 0} onClick={() => setHistoryPage((current) => current - 1)}
+                className="border border-[#dfe2d9] px-3 py-1.5 text-xs text-[#52644f] disabled:opacity-40">Previous</button>
+              <span className="text-xs text-[#687064]">Page {historyPage + 1} of {historyPages}</span>
+              <button type="button" disabled={historyPage + 1 >= historyPages} onClick={() => setHistoryPage((current) => current + 1)}
+                className="border border-[#dfe2d9] px-3 py-1.5 text-xs text-[#52644f] disabled:opacity-40">Next</button>
+            </div>}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 const nextDispatchStatuses = {
   AWAITING_INVENTORY: ["CANCELLED"],
@@ -336,7 +587,7 @@ function UserManagement() {
   );
 }
 
-export default function AdminDashboard({ managerMode = false }) {
+export default function AdminDashboard({ managerMode = false, view = "overview" }) {
   const user = useSelector((state) => state.auth);
   const [products, setProducts] = useState([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -380,22 +631,29 @@ export default function AdminDashboard({ managerMode = false }) {
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const [userResult, orderResult] = await Promise.all([
-        managerMode ? Promise.resolve([]) : getUsers(user.token),
-        getOrders(0, 1, user.token),
-      ]);
-      setUsers(Array.isArray(userResult) ? userResult : []);
-      setOrderTotal(orderResult?.totalElements || 0);
+      if (view === "overview") {
+        const [userResult, orderResult, productResult] = await Promise.all([
+          managerMode ? Promise.resolve([]) : getUsers(user.token),
+          getOrders(0, 1, user.token),
+          getProducts("page=0&size=1", user.token),
+        ]);
+        setUsers(Array.isArray(userResult) ? userResult : []);
+        setOrderTotal(orderResult?.totalElements || 0);
+        setCatalogTotal(productResult?.totalElements || 0);
+      }
     } catch (error) {
       toast.error(error.message || "Could not load the admin dashboard.");
     } finally {
       setLoading(false);
     }
-  }, [managerMode, user.token]);
-
-  useEffect(() => { loadDashboard(); }, [loadDashboard]);
+  }, [managerMode, user.token, view]);
 
   useEffect(() => {
+    if (view === "overview") loadDashboard();
+  }, [loadDashboard, view]);
+
+  useEffect(() => {
+    if (view !== "products") return undefined;
     let active = true;
     const params = new URLSearchParams({
       page: String(catalogPage),
@@ -422,13 +680,10 @@ export default function AdminDashboard({ managerMode = false }) {
       });
 
     return () => { active = false; };
-  }, [catalogPage, catalogQuery, catalogRefresh, user.token]);
+  }, [catalogPage, catalogQuery, catalogRefresh, user.token, view]);
 
   useEffect(() => {
-    if (managerMode) {
-      setBannerLoading(false);
-      return undefined;
-    }
+    if (view !== "banner" || managerMode) return undefined;
     let active = true;
     getBanner(user.token)
       .then((result) => {
@@ -441,7 +696,7 @@ export default function AdminDashboard({ managerMode = false }) {
         if (active) setBannerLoading(false);
       });
     return () => { active = false; };
-  }, [managerMode, user.token]);
+  }, [managerMode, user.token, view]);
 
   const updateBannerField = (event) => {
     const { name, value, checked, type } = event.target;
@@ -494,7 +749,7 @@ export default function AdminDashboard({ managerMode = false }) {
     };
     try {
       if (editingProduct) {
-        await updateProductRequest(editingProduct.id, productData, user.token);
+        await updateProductRequest(editingProduct.productCode || editingProduct.id, productData, user.token);
         setLastUpdatedProductId(editingProduct.id);
         toast.success("Product updated.");
       } else {
@@ -505,7 +760,7 @@ export default function AdminDashboard({ managerMode = false }) {
       reset();
       if (!editingProduct) setCatalogPage(0);
       setCatalogRefresh((current) => current + 1);
-      await loadDashboard();
+      if (view === "overview") await loadDashboard();
     } catch (error) {
       toast.error(error.message || "Could not create product.");
     }
@@ -552,7 +807,7 @@ export default function AdminDashboard({ managerMode = false }) {
   const deleteProduct = async (product) => {
     if (!window.confirm(`Delete "${product.name}" from the catalog?`)) return;
     try {
-      await deleteProductRequest(product.id, user.token);
+      await deleteProductRequest(product.productCode || product.id, user.token);
       if (products.length === 1 && catalogPage > 0) setCatalogPage((page) => page - 1);
       else setCatalogRefresh((current) => current + 1);
       toast.success("Product deleted.");
@@ -563,15 +818,17 @@ export default function AdminDashboard({ managerMode = false }) {
 
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#788174]">{managerMode ? "Catalog management" : "Administration"}</p>
-      <h1 className="mt-2 text-3xl font-normal tracking-[-0.04em] text-[#29382d]">{managerMode ? "Product management" : "Store overview"}</h1>
-      {!managerMode && <div className="mt-7 grid gap-4 sm:grid-cols-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#788174]">{managerMode ? "Manager workspace" : "Administration"}</p>
+      <h1 className="mt-2 text-3xl font-normal tracking-[-0.04em] text-[#29382d]">
+        {view === "overview" ? "Store overview" : view === "products" ? "Product management" : view === "orders" ? "Order management" : view === "users" ? "User management" : "Storefront banner"}
+      </h1>
+      {view === "overview" && <div className="mt-7 grid gap-4 sm:grid-cols-3">
         {[{ label: "Catalog products", count: catalogTotal, Icon: Package }, { label: "Registered users", count: users.length, Icon: Users }, { label: "Orders", count: orderTotal, Icon: Package }].map(({ label, count, Icon }) => (
           <div key={label} className="border border-[#e4e6de] bg-white p-5"><div className="flex items-center justify-between"><p className="text-xs text-[#858a80]">{label}</p><Icon size={16} className="text-[#71816d]" /></div><p className="mt-3 text-3xl font-medium text-[#354237]">{loading ? "—" : count}</p></div>
         ))}
       </div>}
 
-      {!managerMode && <section className="mt-8 border border-[#e4e6de] bg-white p-5 sm:p-6">
+      {view === "banner" && !managerMode && <section className="mt-8 border border-[#e4e6de] bg-white p-5 sm:p-6">
         <div className="flex items-center gap-2"><Image size={17} className="text-[#52644f]" /><h2 className="text-lg font-medium text-[#354237]">Storefront banner</h2></div>
         <p className="mt-1 text-xs text-[#858a80]">Edit the home page hero banner or turn it off for shoppers.</p>
         {bannerLoading ? <LoadingState label="Loading banner settings…" compact /> : (
@@ -603,9 +860,11 @@ export default function AdminDashboard({ managerMode = false }) {
         )}
       </section>}
 
-      <OrderManagement />
+      {view === "orders" && <OrderManagement />}
 
-      <section id="product-editor" className="mt-8 border border-[#e4e6de] bg-white p-5 sm:p-6">
+      {view === "products" && <StockImportPanel token={user.token} onImported={() => setCatalogRefresh((current) => current + 1)} />}
+
+      {view === "products" && <section id="product-editor" className="mt-8 border border-[#e4e6de] bg-white p-5 sm:p-6">
         <div className="flex items-center gap-2"><Plus size={17} className="text-[#52644f]" /><h2 className="text-lg font-medium text-[#354237]">{editingProduct ? "Edit product" : "Add a product"}</h2></div>
         <form onSubmit={handleSubmit(saveProduct)} noValidate className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
@@ -637,9 +896,9 @@ export default function AdminDashboard({ managerMode = false }) {
             {editingProduct && <button type="button" onClick={cancelProductEdit} className="flex h-10 items-center gap-2 border border-[#dfe2d9] px-4 text-xs text-[#52644f] hover:bg-[#f4f5f0]"><X size={14} /> Cancel</button>}
           </div>
         </form>
-      </section>
+      </section>}
 
-      <section className="mt-8">
+      {view === "products" && <section className="mt-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-medium text-[#354237]">Product catalog</h2>
@@ -663,8 +922,8 @@ export default function AdminDashboard({ managerMode = false }) {
         {catalogLoading ? <LoadingState label="Loading product catalog…" compact /> : products.length === 0 ? <p className="mt-4 border border-[#e4e6de] bg-white p-6 text-sm text-[#858a80]">{catalogQuery ? `No products match “${catalogQuery}”.` : "No products found."}</p> : (
           <div className="mt-4 overflow-x-auto border border-[#e4e6de] bg-white">
             <table className="w-full min-w-[620px] text-left text-sm">
-              <thead className="border-b border-[#e4e6de] bg-[#fbfbf8] text-xs text-[#858a80]"><tr><th className="px-4 py-3 font-medium">Product</th><th className="px-4 py-3 font-medium">Category</th><th className="px-4 py-3 font-medium">Price</th><th className="px-4 py-3 font-medium">Stock</th>{!managerMode && <th className="px-4 py-3 text-right font-medium">Action</th>}</tr></thead>
-              <tbody>{products.map((product) => <tr key={product.id} className="border-b border-[#eef0ea] last:border-0"><td className="px-4 py-3 font-medium text-[#354237]"><span className="inline-flex items-center gap-2">{product.name}{product.id === lastUpdatedProductId && <span title="Updated successfully" aria-label="Updated successfully" className="h-2 w-2 rounded-full bg-emerald-600" />}</span></td><td className="px-4 py-3 text-[#687064]">{product.category}</td><td className="px-4 py-3 text-[#687064]">${Number(product.offerPrice ?? product.price).toFixed(2)}</td><td className="px-4 py-3 text-[#687064]">{product.stockCount ?? "—"}</td>{!managerMode && <td className="px-4 py-3 text-right"><button onClick={() => editProduct(product)} aria-label={`Edit ${product.name}`} className="rounded p-2 text-[#71816d] hover:bg-[#eef1e9]"><Pencil size={15} /></button><button onClick={() => deleteProduct(product)} aria-label={`Delete ${product.name}`} className="rounded p-2 text-[#92978e] hover:bg-red-50 hover:text-red-700"><Trash2 size={15} /></button></td>}</tr>)}</tbody>
+              <thead className="border-b border-[#e4e6de] bg-[#fbfbf8] text-xs text-[#858a80]"><tr><th className="px-4 py-3 font-medium">Product / code</th><th className="px-4 py-3 font-medium">Category</th><th className="px-4 py-3 font-medium">Price</th><th className="px-4 py-3 font-medium">Stock</th>{!managerMode && <th className="px-4 py-3 text-right font-medium">Action</th>}</tr></thead>
+              <tbody>{products.map((product) => <tr key={product.id} className="border-b border-[#eef0ea] last:border-0"><td className="px-4 py-3 font-medium text-[#354237]"><span className="inline-flex items-center gap-2">{product.name}{product.id === lastUpdatedProductId && <span title="Updated successfully" aria-label="Updated successfully" className="h-2 w-2 rounded-full bg-emerald-600" />}</span><span className="mt-1 block font-mono text-[11px] font-normal text-[#858a80]">{product.productCode || "Code pending"}</span></td><td className="px-4 py-3 text-[#687064]">{product.category}</td><td className="px-4 py-3 text-[#687064]">${Number(product.offerPrice ?? product.price).toFixed(2)}</td><td className="px-4 py-3 text-[#687064]">{product.stockCount ?? "—"}</td>{!managerMode && <td className="px-4 py-3 text-right"><button onClick={() => editProduct(product)} aria-label={`Edit ${product.name}`} className="rounded p-2 text-[#71816d] hover:bg-[#eef1e9]"><Pencil size={15} /></button><button onClick={() => deleteProduct(product)} aria-label={`Delete ${product.name}`} className="rounded p-2 text-[#92978e] hover:bg-red-50 hover:text-red-700"><Trash2 size={15} /></button></td>}</tr>)}</tbody>
             </table>
           </div>
         )}
@@ -675,8 +934,8 @@ export default function AdminDashboard({ managerMode = false }) {
           <button type="button" disabled={catalogPage + 1 >= catalogPages || catalogLoading} onClick={() => setCatalogPage((page) => page + 1)}
             className="rounded border border-[#dfe2d9] bg-white px-3 py-2 text-xs text-[#52644f] disabled:opacity-40">Next</button>
         </div>}
-      </section>
-      {!managerMode && <UserManagement />}
+      </section>}
+      {view === "users" && !managerMode && <UserManagement />}
     </div>
   );
 }

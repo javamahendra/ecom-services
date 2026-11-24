@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Product {
     @Id
     private String id;
+    private String productCode;
     private String name;
     private String description;
     private String baseColor;
@@ -75,6 +76,27 @@ public class Product {
         return variant;
     }
 
+    public ProductVariant updateVariantStockByColor(String color, int stockCount) {
+        List<ProductVariant> matchingVariants = variants.stream()
+                .filter(variant -> variant.getColor().equalsIgnoreCase(color))
+                .toList();
+        if (matchingVariants.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "Product color variant not found: " + color);
+        }
+        if (matchingVariants.size() > 1) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Product has multiple variants with color: " + color);
+        }
+        ProductVariant variant = matchingVariants.getFirst();
+        variant.updateStock(stockCount);
+        recalculateStock();
+        this.updatedAt = LocalDateTime.now();
+        return variant;
+    }
+
     public ProductVariant updateVariantStock(UUID variantId, int stockCount) {
         ProductVariant variant = findVariant(variantId);
         variant.updateStock(stockCount);
@@ -115,6 +137,8 @@ public class Product {
     }
 
     public String getId() { return id; }
+    public String getProductCode() { return productCode; }
+    public void assignProductCode(String productCode) { this.productCode = productCode; }
     public String getName() { return name; }
     public String getDescription() { return description; }
     public String getBaseColor() { return baseColor; }

@@ -17,6 +17,12 @@ API requests use the shared Axios client in `src/api.js`. The configured Redux s
 
 Feature API calls are grouped in `src/services/` (`userService.js`, `productService.js`, `orderService.js`, and `bannerService.js`); these services use the shared request client in `src/api.js`. Keep components focused on UI and feature state, and put endpoint-specific request logic in the matching service.
 
+Admins and managers can bulk update variant stock from the product management panel by dropping or browsing for a CSV/XLSX/XLS file. Use the `productCode,color,stockCount` columns; product codes are 10-character human-readable identifiers shown in the catalog. Imports are limited to 10 MB and 5,000 rows. The backend validates every row before applying any updates.
+
+Each stock import is recorded in MongoDB with the file name, size, SHA-256 checksum, upload time, authenticated uploader, status, and per-variant old/new stock plus product category/type. Admins and managers can review this audit history in the same panel.
+
+The uploader sees file-transfer percentage and receives start/completion toasts with successful and failed row counts. Other admins and managers see active imports, uploader identity, row-processing percentage, and completion notifications through a two-second status refresh. Valid rows are applied even when other rows fail; each failed row and reason is retained in the audit history.
+
 Active sessions refresh access tokens as needed. After 30 minutes without user activity, the storefront signs out, revokes the refresh token, and redirects to sign-in.
 
 Checkout requires a signed-in user. Users can save multiple delivery addresses from checkout or `/account/addresses`, choose a delivery address per order, and mark one saved address as their main address. Checkout submits orders to `/api/orders` and clears the local bag after a successful response.

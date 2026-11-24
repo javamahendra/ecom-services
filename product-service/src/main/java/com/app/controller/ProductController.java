@@ -7,7 +7,12 @@ import com.app.request.VariantUpdateRequest;
 import com.app.request.ProductVariantRequest;
 import com.app.response.PageResponse;
 import com.app.response.ProductResponse;
+import com.app.response.PageResponse;
+import com.app.response.StockImportAuditResponse;
+import com.app.response.StockImportResponse;
 import com.app.service.ProductService;
+import com.app.service.StockImportActor;
+import com.app.service.ProductStockImportService;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -16,6 +21,8 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,14 +33,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService products;
+    private final ProductStockImportService stockImports;
 
-    public ProductController(ProductService products) {
+    public ProductController(ProductService products, ProductStockImportService stockImports) {
         this.products = products;
+        this.stockImports = stockImports;
     }
 
     @GetMapping
@@ -64,7 +74,29 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
         ProductResponse product = products.create(request);
-        return ResponseEntity.created(URI.create("/api/products/" + product.id())).body(product);
+        return ResponseEntity.created(URI.create("/api/products/" + product.productCode())).body(product);
+    }
+
+    @PostMapping(value = "/stock-import", consumes = "multipart/form-data")
+    public StockImportResponse importStock(@RequestParam("file") MultipartFile file,
+                                           Authentication authentication) {
+        JwtAuthenticationToken jwtAuthentication = (JwtAuthenticationToken) authentication;
+        var jwt = jwtAuthentication.getToken();
+        String displayName = jwt.getClaimAsString("preferred_username");
+        if (displayName == null || displayName.isBlank()) {
+            displayName = jwt.getClaimAsString("email");
+        }
+        if (displayName == null || displayName.isBlank()) {
+            displayName = jwt.getSubject();
+        }
+        return stockImports.importStock(file, new StockImportActor(jwt.getSubject(), displayName));
+    }
+
+    @GetMapping("/stock-imports")
+    public PageResponse<StockImportAuditResponse> stockImportHistory(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        return stockImports.findImportHistory(page, size);
     }
 
     @PutMapping("/{id}")

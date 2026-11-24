@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.security.SecureRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -32,6 +33,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ProductService {
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
+    private static final String PRODUCT_CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final SecureRandom PRODUCT_CODE_RANDOM = new SecureRandom();
     private static final Map<String, String> SORT_FIELDS = Map.ofEntries(
             Map.entry("name", "name"),
             Map.entry("price", "price"),
@@ -54,6 +57,7 @@ public class ProductService {
                 request.name(), request.description(), request.category(), request.productType(),
                 request.baseColor(), request.price(), request.discount(), request.offerPrice(),
                 request.listDate(), createVariants(request.variants()));
+        product.assignProductCode(generateUniqueProductCode());
         ProductResponse response = toResponse(products.save(product));
         logger.info("Product created: id={}, name={}, type={}, category={}",
                 response.id(), response.name(), response.productType(), response.category());
@@ -179,6 +183,7 @@ public class ProductService {
             conditions.add(new Criteria().orOperator(
                     Criteria.where("name").regex(term, "i"),
                     Criteria.where("description").regex(term, "i"),
+                    Criteria.where("productCode").regex(term, "i"),
                     Criteria.where("baseColor").regex(term, "i"),
                     Criteria.where("category").regex(term, "i"),
                     Criteria.where("productType").regex(term, "i"),
@@ -205,8 +210,46 @@ public class ProductService {
     }
 
     private Product find(String id) {
-        return products.findById(id).orElseThrow(() ->
+        return products.findByProductCode(id).or(() -> products.findById(id)).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
+    }
+
+    public void backfillProductCodes() {
+        List<Product> existingProducts = products.findAll();
+        Set<String> reservedCodes = existingProducts.stream()
+                .map(Product::getProductCode)
+                .filter(code -> code != null && !code.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+        List<Product> productsWithoutCodes = existingProducts.stream()
+                .filter(product -> product.getProductCode() == null || product.getProductCode().isBlank())
+                .toList();
+        for (Product product : productsWithoutCodes) {
+            String code = generateUniqueProductCode(reservedCodes);
+            product.assignProductCode(code);
+            reservedCodes.add(code);
+        }
+        if (!productsWithoutCodes.isEmpty()) {
+            products.saveAll(productsWithoutCodes);
+            logger.info("Generated product codes for existing products: count={}", productsWithoutCodes.size());
+        }
+    }
+
+    private String generateUniqueProductCode() {
+        return generateUniqueProductCode(Set.of());
+    }
+
+    private String generateUniqueProductCode(Set<String> reservedCodes) {
+        for (int attempt = 0; attempt < 20; attempt++) {
+            StringBuilder code = new StringBuilder(10);
+            for (int index = 0; index < 10; index++) {
+                code.append(PRODUCT_CODE_CHARACTERS.charAt(
+                        PRODUCT_CODE_RANDOM.nextInt(PRODUCT_CODE_CHARACTERS.length())));
+            }
+            if (!reservedCodes.contains(code.toString()) && !products.existsByProductCode(code.toString())) {
+                return code.toString();
+            }
+        }
+        throw new IllegalStateException("Could not generate a unique product code after 20 attempts");
     }
 
     private List<ProductVariant> createVariants(List<ProductVariantRequest> requests) {
@@ -224,7 +267,7 @@ public class ProductService {
                         variant.isInStock(), variant.getStockCount()))
                 .toList();
         return new ProductResponse(
-                product.getId(), product.getName(), product.getDescription(),
+                product.getId(), product.getProductCode(), product.getName(), product.getDescription(),
                 product.getCategory(), product.getProductType(), product.getBaseColor(),
                 product.getPrice(), product.getDiscount(), product.getOfferPrice(), product.getListDate(),
                 product.isInStock(), product.getStockCount(), product.getCreatedAt(), product.getUpdatedAt(),

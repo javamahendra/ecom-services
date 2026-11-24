@@ -49,10 +49,13 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/banner").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/api/banner").hasRole("admin")
+                .requestMatchers(HttpMethod.GET, "/api/products/stock-imports").hasAnyRole("admin", "manager")
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/products/stock-import").hasAnyRole("admin", "manager")
                 .requestMatchers(HttpMethod.POST, "/api/products").hasAnyRole("admin", "manager")
                 .requestMatchers(HttpMethod.POST, "/api/products/*/variants").hasRole("admin")
+                .requestMatchers(HttpMethod.PATCH, "/api/products/*/variants/*/stock").hasAnyRole("admin", "manager")
                 .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("admin")
                 .requestMatchers(HttpMethod.PATCH, "/api/products/**").hasRole("admin")
                 .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("admin")
