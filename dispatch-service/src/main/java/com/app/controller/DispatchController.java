@@ -36,12 +36,21 @@ public class DispatchController {
     public Map<String, Object> search(Authentication auth,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        return dispatch.search(auth.getName(), isStaff(auth), status, search, page, size, sortBy, direction);
+        return dispatch.search(auth.getName(), isStaff(auth), status, search, fromDate, toDate,
+                page, size, sortBy, direction);
     }
+
+    @GetMapping("/api/dispatches/count")
+    public long count(Authentication auth) {
+        return dispatch.count(auth.getName(), isStaff(auth));
+    }
+
     @GetMapping("/api/dispatches/{orderId}")
     public DispatchRecord get(Authentication auth, @PathVariable String orderId) {
         return dispatch.get(orderId, auth.getName(), isStaff(auth));

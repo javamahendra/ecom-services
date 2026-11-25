@@ -54,6 +54,11 @@ public class UserController {
         return users.findAllWithRoles();
     }
 
+    @GetMapping("/count")
+    public long count() {
+        return users.count();
+    }
+
     @GetMapping("/{id}")
     public UserResponse findById(@PathVariable @NotBlank @Size(max = 255) String id,
                                  Authentication authentication) {

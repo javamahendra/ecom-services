@@ -56,14 +56,36 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Boolean inStock,
             @RequestParam(required = false) Integer minStock,
+            @RequestParam(required = false) Integer maxStock,
+            @RequestParam(required = false) String stockOperator,
+            @RequestParam(required = false) Integer stockValue,
+            @RequestParam(required = false) Integer colorCount,
+            @RequestParam(required = false) BigDecimal minDiscount,
+            @RequestParam(required = false) BigDecimal maxDiscount,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate listedFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate listedTo,
             @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String direction,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int size) {
-        return products.search(search, category, productType, colors, minPrice, maxPrice, inStock, minStock,
+        return products.search(search, category, productType, colors, minPrice, maxPrice, inStock,
+                minStock, maxStock, stockOperator, stockValue, colorCount, minDiscount, maxDiscount,
                 listedFrom, listedTo, sortBy, direction, page, size);
+    }
+
+    @GetMapping("/count")
+    public long count() {
+        return products.count();
+    }
+
+    @PostMapping("/inventory/sync")
+    public java.util.Map<String, Integer> syncInventory() {
+        return products.syncInventory();
+    }
+
+    @PostMapping("/inventory/metadata-sync")
+    public java.util.Map<String, Integer> syncInventoryMetadata() {
+        return products.syncInventoryMetadata();
     }
 
     @GetMapping("/{id}")

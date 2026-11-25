@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 public record OrderEvent(
-        String eventId, String eventType, String orderId, String userId, String email,
+        String eventId, String eventType, String orderId, String userId, String email, String status,
         List<OrderItem> items, ShippingAddress shippingAddress, BigDecimal total, Instant occurredAt) {
     public record OrderItem(String productId, String variantId, String productName,
                             String color, int quantity, BigDecimal unitPrice) {}

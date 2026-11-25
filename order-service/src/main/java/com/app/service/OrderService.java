@@ -6,12 +6,16 @@ import com.app.repository.OrderRepository;
 import com.app.request.CreateOrderRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -55,10 +59,11 @@ public class OrderService {
             publish(order, "ORDER_CANCELLED");
             return order;
         }
-        if (!List.of("PENDING_INVENTORY", "CONFIRMED", "REJECTED").contains(order.getStatus())) {
+        if (!List.of("PENDING_INVENTORY", "CONFIRMED", "PARTIALLY_CONFIRMED", "REJECTED")
+                .contains(order.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Order cannot be cancelled in status " + order.getStatus());
         }
-        order.setStatus("CANCELLATION_PENDING");
+        order.setInventoryResult("CANCELLATION_PENDING", null);
         repository.save(order);
         publish(order, "ORDER_CANCELLED");
         log.info("Order cancellation requested: orderId={}, userId={}", id, userId);
@@ -74,6 +79,7 @@ public class OrderService {
     }
 
     public Map<String, Object> search(String userId, boolean admin, String status, String search,
+                                      String fromDate, String toDate,
                                       int page, int size, String sortBy, String direction) {
         validatePage(page, size);
         List<Criteria> filters = new java.util.ArrayList<>();
@@ -84,6 +90,7 @@ public class OrderService {
             filters.add(new Criteria().orOperator(Criteria.where("_id").regex(term, "i"),
                     Criteria.where("email").regex(term, "i")));
         }
+        addCreatedAtRange(filters, fromDate, toDate);
         Criteria criteria = filters.isEmpty() ? new Criteria() :
                 new Criteria().andOperator(filters.toArray(Criteria[]::new));
         Query query = new Query(criteria);
@@ -97,9 +104,61 @@ public class OrderService {
                 "last", page + 1 >= Math.max(1, (int) Math.ceil((double) total / size)));
     }
 
-    public void updateStatus(String id, String status) {
+    private void addCreatedAtRange(List<Criteria> filters, String fromDate, String toDate) {
+        try {
+            LocalDate from = parseDate(fromDate);
+            LocalDate to = parseDate(toDate);
+            if (from != null && to != null && from.isAfter(to)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fromDate must be on or before toDate");
+            }
+            if (from != null || to != null) {
+                Criteria range = Criteria.where("createdAt");
+                if (from != null) range.gte(from.atStartOfDay().toInstant(ZoneOffset.UTC));
+                if (to != null) range.lt(to.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC));
+                filters.add(range);
+            }
+        } catch (java.time.format.DateTimeParseException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dates must use YYYY-MM-DD format", exception);
+        }
+    }
+
+    private LocalDate parseDate(String date) {
+        return date == null || date.isBlank() ? null : LocalDate.parse(date);
+    }
+
+    public long count(String userId, boolean admin) {
+        Query query = admin ? new Query() : Query.query(Criteria.where("userId").is(userId));
+        return mongo.count(query, OrderDocument.class);
+    }
+
+    public long syncDispatches() {
+        long queued = 0;
+        int page = 0;
+        List<OrderDocument> orders;
+        do {
+            orders = repository.findAll(PageRequest.of(page++, 100, Sort.by(Sort.Direction.ASC, "createdAt")))
+                    .getContent();
+            for (OrderDocument order : orders) {
+                try {
+                    kafka.send("commerce.order-events", order.getId(), dispatchSyncEvent(order)).get();
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                            "Dispatch synchronization was interrupted", exception);
+                } catch (ExecutionException exception) {
+                    log.error("Failed to publish dispatch sync event: orderId={}", order.getId(), exception);
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                            "Could not publish dispatch synchronization event", exception.getCause());
+                }
+            }
+            queued += orders.size();
+        } while (orders.size() == 100);
+        return queued;
+    }
+
+    public void updateStatus(String id, String status, List<com.app.event.InventoryEvent.ItemResult> itemResults) {
         repository.findById(id).ifPresent(order -> {
-            order.setStatus(status);
+            order.setInventoryResult(status, itemResults);
             repository.save(order);
             log.info("Order status updated from inventory event: orderId={}, status={}", id, status);
         });
@@ -112,12 +171,23 @@ public class OrderService {
 
     private void publish(OrderDocument order, String type) {
         OrderEvent event = new OrderEvent(UUID.randomUUID().toString(), type, order.getId(), order.getUserId(),
-                order.getEmail(), order.getItems(), order.getShippingAddress(), order.getTotal(), Instant.now());
+                order.getEmail(), order.getStatus(), order.getItems(), order.getShippingAddress(), order.getTotal(),
+                eventTime(order, type));
         kafka.send("commerce.order-events", order.getId(), event)
                 .whenComplete((result, error) -> {
                     if (error != null) log.error("Failed to publish order event: orderId={}, type={}",
                             order.getId(), type, error);
                 });
+    }
+
+    private OrderEvent dispatchSyncEvent(OrderDocument order) {
+        return new OrderEvent(UUID.randomUUID().toString(), "DISPATCH_SYNC", order.getId(), order.getUserId(),
+                order.getEmail(), order.getStatus(), order.getItems(), order.getShippingAddress(), order.getTotal(),
+                eventTime(order, "DISPATCH_SYNC"));
+    }
+
+    private Instant eventTime(OrderDocument order, String type) {
+        return "DISPATCH_SYNC".equals(type) && order.getCreatedAt() != null ? order.getCreatedAt() : Instant.now();
     }
 
     private static void validatePage(int page, int size) {

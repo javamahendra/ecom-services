@@ -144,6 +144,11 @@ public class UserService {
         return profiles.findAll().stream().map(profile -> findAdminUser(profile.getId())).toList();
     }
 
+    @Transactional(readOnly = true)
+    public long count() {
+        return profiles.count();
+    }
+
     @Transactional
     public AdminUserResponse updateRole(String id, String roleName) {
         RoleRepresentation newRole = findManagedRole(roleName);

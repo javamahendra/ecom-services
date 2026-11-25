@@ -187,6 +187,20 @@ paths:
                   $ref: '#/components/schemas/User'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /api/users/count:
+    get:
+      tags: [Users]
+      summary: Get the total number of registered users (admin)
+      responses:
+        '200':
+          description: Total registered users
+          content:
+            application/json:
+              schema: {type: integer, format: int64}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/users/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -222,8 +236,6 @@ paths:
                 $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
     delete:
       tags: [Users]
       summary: Delete a user
@@ -257,6 +269,10 @@ paths:
             type: array
             items: {type: string}
         - in: query
+          name: colorCount
+          description: Exact number of color variants on the product.
+          schema: {type: integer, minimum: 0}
+        - in: query
           name: minPrice
           schema: {type: number, format: double}
         - in: query
@@ -269,6 +285,26 @@ paths:
           name: minStock
           schema: {type: integer, minimum: 0}
         - in: query
+          name: maxStock
+          description: Maximum total stock; use this to find low-stock products.
+          schema: {type: integer, minimum: 0}
+        - in: query
+          name: stockOperator
+          description: Comparison for stockValue. Supported values are eq, gte, lte, gt, lt, and ne.
+          schema: {type: string, enum: [eq, gte, lte, gt, lt, ne]}
+        - in: query
+          name: stockValue
+          description: Non-negative stock count used with stockOperator.
+          schema: {type: integer, minimum: 0}
+        - in: query
+          name: minDiscount
+          description: Minimum discount percentage, from 0 to 100.
+          schema: {type: number, minimum: 0, maximum: 100}
+        - in: query
+          name: maxDiscount
+          description: Maximum discount percentage, from 0 to 100.
+          schema: {type: number, minimum: 0, maximum: 100}
+        - in: query
           name: listedFrom
           schema: {type: string, format: date}
         - in: query
@@ -278,7 +314,7 @@ paths:
         - $ref: '#/components/parameters/Size'
         - in: query
           name: sortBy
-          schema: {type: string, default: createdAt}
+          schema: {type: string, enum: [name, productCode, price, offerPrice, discount, listDate, stockCount, createdAt], default: createdAt}
         - $ref: '#/components/parameters/Direction'
       responses:
         '200':
@@ -292,6 +328,7 @@ paths:
     post:
       tags: [Products]
       summary: Create a product (admin)
+      description: New variant stock is asynchronously seeded in Inventory Service.
       requestBody:
         required: true
         content:
@@ -305,6 +342,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/count:
+    get:
+      tags: [Products]
+      summary: Get the total number of catalog products
+      security: []
+      responses:
+        '200':
+          description: Total catalog products
+          content:
+            application/json:
+              schema: {type: integer, format: int64}
+  /api/products/inventory/sync:
+    post:
+      tags: [Products]
+      summary: Reconcile inventory quantities from product variant stock (admin)
+      description: Sets each inventory variant's available quantity to its current product catalog stock count.
+      responses:
+        '200':
+          description: Number of catalog variants queued for inventory seeding
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  syncedVariants: {type: integer}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/products/inventory/metadata-sync:
+    post:
+      tags: [Products]
+      summary: Refresh inventory product names and codes without changing stock
+      responses:
+        '200':
+          description: Number of catalog variants queued for metadata refresh
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  syncedVariants: {type: integer}
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -473,6 +556,14 @@ paths:
         - in: query
           name: search
           schema: {type: string}
+        - in: query
+          name: fromDate
+          description: Include orders created on or after this UTC date.
+          schema: {type: string, format: date}
+        - in: query
+          name: toDate
+          description: Include orders created through this UTC date.
+          schema: {type: string, format: date}
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
         - in: query
@@ -509,6 +600,50 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /api/orders/count:
+    get:
+      tags: [Orders]
+      summary: Get the total number of orders visible to the current user
+      description: Administrators and managers receive the total across all users; other users receive their own order count.
+      responses:
+        '200':
+          description: Total visible orders
+          content:
+            application/json:
+              schema: {type: integer, format: int64}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/orders/dispatches/sync:
+    post:
+      tags: [Orders]
+      summary: Queue existing orders for dispatch synchronization (admin or manager)
+      description: Creates missing dispatch records from existing orders without replaying inventory reservation events. Safe to repeat.
+      responses:
+        '200':
+          description: Number of existing orders queued for synchronization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queued: {type: integer, format: int64}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/dispatches/count:
+    get:
+      tags: [Dispatch]
+      summary: Get the total number of dispatches visible to the current user
+      description: Administrators and managers receive the total across all users; other users receive their own dispatch count.
+      responses:
+        '200':
+          description: Total visible dispatches
+          content:
+            application/json:
+              schema: {type: integer, format: int64}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/orders/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -542,8 +677,12 @@ paths:
   /api/inventory:
     get:
       tags: [Inventory]
-      summary: Search inventory by product, color, and available quantity
+      summary: Search inventory by product, variant, and available quantity
       parameters:
+        - in: query
+          name: search
+          description: Case-insensitive match against product name, product code, product ID, or variant ID.
+          schema: {type: string}
         - in: query
           name: productId
           schema: {type: string}
@@ -553,11 +692,30 @@ paths:
         - in: query
           name: minQuantity
           schema: {type: integer, minimum: 0}
+        - in: query
+          name: maxQuantity
+          schema: {type: integer, minimum: 0}
+        - in: query
+          name: quantityOperator
+          description: Comparison for quantityValue. Supported values are eq, gte, lte, gt, lt, and ne.
+          schema: {type: string, enum: [eq, gte, lte, gt, lt, ne]}
+        - in: query
+          name: quantityValue
+          description: Non-negative quantity used with quantityOperator.
+          schema: {type: integer, minimum: 0}
+        - in: query
+          name: fromDate
+          description: Include records updated on or after this UTC date.
+          schema: {type: string, format: date}
+        - in: query
+          name: toDate
+          description: Include records updated on or before this UTC date.
+          schema: {type: string, format: date}
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
         - in: query
           name: sortBy
-          schema: {type: string, default: updatedAt}
+          schema: {type: string, enum: [color, quantity, productCode, productName, variantId, updatedAt], default: updatedAt}
         - $ref: '#/components/parameters/Direction'
       responses:
         '200':
@@ -569,6 +727,7 @@ paths:
     put:
       tags: [Inventory]
       summary: Create or update inventory record (admin)
+      description: Sets available variant stock. Inventory Service asynchronously reflects the resulting quantity in the product catalog.
       requestBody:
         required: true
         content:
@@ -584,6 +743,26 @@ paths:
                 $ref: '#/components/schemas/InventoryItem'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/inventory/sync-product:
+    post:
+      tags: [Inventory]
+      summary: Send one inventory variant's quantity to Product Service
+      parameters:
+        - in: query
+          name: productId
+          required: true
+          schema: {type: string}
+        - in: query
+          name: variantId
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Inventory quantity accepted by Kafka for product catalog synchronization
+        '404':
+          description: Inventory variant not found
+        '503':
+          description: Stock update could not be published
   /api/notifications:
     get:
       tags: [Notifications]
@@ -809,6 +988,14 @@ paths:
         - in: query
           name: search
           schema: {type: string}
+        - in: query
+          name: fromDate
+          description: Include dispatches created on or after this UTC date.
+          schema: {type: string, format: date}
+        - in: query
+          name: toDate
+          description: Include dispatches created through this UTC date.
+          schema: {type: string, format: date}
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
         - in: query
@@ -1302,7 +1489,18 @@ components:
         items: {type: array, items: {type: object}}
         shippingAddress: {type: object}
         total: {type: number}
-        status: {type: string}
+        status:
+          type: string
+          enum: [PENDING_INVENTORY, CONFIRMED, PARTIALLY_CONFIRMED, REJECTED, CANCELLATION_PENDING, CANCELLED]
+        itemResults:
+          type: array
+          description: Per-line inventory reservation result. A partially confirmed order keeps reserved lines and identifies unavailable lines without cancelling the whole order.
+          items:
+            type: object
+            properties:
+              itemIndex: {type: integer, minimum: 0}
+              status: {type: string, enum: [RESERVED, REJECTED]}
+              message: {type: string}
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
     InventoryRequest:
@@ -1320,6 +1518,7 @@ components:
         - type: object
           properties:
             id: {type: string}
+            productCode: {type: string}
             inStock: {type: boolean}
             updatedAt: {type: string, format: date-time}
     ScheduleNotificationRequest:

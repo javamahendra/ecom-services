@@ -6,6 +6,7 @@ import { store } from "./store/store";
 
 const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 let refreshPromise;
+const inFlightGetRequests = new Map();
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -97,7 +98,31 @@ function makeRequestConfig(path, requestOptions, body, headers, token) {
   };
 }
 
-export async function request(path, options = {}) {
+export function request(path, options = {}) {
+  if ((options.method || "GET").toUpperCase() !== "GET") {
+    return performRequest(path, options);
+  }
+
+  const currentToken = store.getState().auth?.token;
+  const token = options.token ? (currentToken || options.token) : undefined;
+  const key = JSON.stringify([path, token]);
+  const existingRequest = inFlightGetRequests.get(key);
+  if (existingRequest) return existingRequest;
+
+  const pendingRequest = performRequest(path, options);
+  inFlightGetRequests.set(key, pendingRequest);
+  pendingRequest.then(
+    () => {
+      if (inFlightGetRequests.get(key) === pendingRequest) inFlightGetRequests.delete(key);
+    },
+    () => {
+      if (inFlightGetRequests.get(key) === pendingRequest) inFlightGetRequests.delete(key);
+    },
+  );
+  return pendingRequest;
+}
+
+async function performRequest(path, options = {}) {
   const { token, body, headers, ...requestOptions } = options;
   const currentToken = store.getState().auth?.token;
   let activeToken = token ? (currentToken || token) : undefined;

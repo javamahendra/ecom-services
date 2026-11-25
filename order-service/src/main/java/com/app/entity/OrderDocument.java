@@ -1,6 +1,7 @@
 package com.app.entity;
 
 import com.app.event.OrderEvent;
+import com.app.event.InventoryEvent;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +17,7 @@ public class OrderDocument {
     private OrderEvent.ShippingAddress shippingAddress;
     private BigDecimal total;
     private String status;
+    private List<InventoryEvent.ItemResult> itemResults;
     private Instant createdAt;
     private Instant updatedAt;
     public OrderDocument() {}
@@ -32,7 +34,12 @@ public class OrderDocument {
     public OrderEvent.ShippingAddress getShippingAddress() { return shippingAddress; }
     public BigDecimal getTotal() { return total; }
     public String getStatus() { return status; }
+    public List<InventoryEvent.ItemResult> getItemResults() { return itemResults; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
-    public void setStatus(String status) { this.status = status; this.updatedAt = Instant.now(); }
+    public void setInventoryResult(String status, List<InventoryEvent.ItemResult> itemResults) {
+        this.status = status;
+        if (itemResults != null && !itemResults.isEmpty()) this.itemResults = itemResults;
+        this.updatedAt = Instant.now();
+    }
 }

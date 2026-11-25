@@ -10,6 +10,7 @@ public record OrderEvent(
         String orderId,
         String userId,
         String email,
+        String status,
         List<OrderItem> items,
         ShippingAddress shippingAddress,
         BigDecimal total,

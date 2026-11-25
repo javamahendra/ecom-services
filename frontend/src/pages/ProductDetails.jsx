@@ -13,11 +13,25 @@ import LoadingState from "../components/LoadingState";
 export default function ProductDetails() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [selectedVariantId, setSelectedVariantId] = useState("");
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
 
-  const variantId = product?.variantId || product?.variants?.[0]?.id || "default";
+  const variants = product
+    ? (product.variants?.length
+      ? product.variants
+      : [{
+        id: product.variantId || "default",
+        color: product.color || product.baseColor || "Default",
+        imageUrls: product.image ? [product.image] : [],
+        stockCount: product.stockCount || 0,
+      }])
+    : [];
+  const selectedVariant = variants.find((variant) => (variant.id || variant.variantId) === selectedVariantId) || variants[0];
+  const variantId = selectedVariant?.id || selectedVariant?.variantId || "default";
+  const variantStockCount = Math.max(0, Number(selectedVariant?.stockCount) || 0);
+  const totalStockCount = variants.reduce((total, variant) => total + Math.max(0, Number(variant.stockCount) || 0), 0);
   const cartItemId = product ? `${product.id}-${variantId}` : null;
   const quantity = cart.find((item) => item.id === cartItemId)?.quantity || 0;
 
@@ -26,11 +40,17 @@ export default function ProductDetails() {
     setLoading(true);
     setProduct(null);
     getProduct(id)
-      .then((data) => { if (active) setProduct(normalizeProduct(data)); })
+      .then((data) => {
+        if (!active) return;
+        const normalized = normalizeProduct(data);
+        setProduct(normalized);
+        setSelectedVariantId(normalized.variants?.[0]?.id || normalized.variantId || "default");
+      })
       .catch((error) => {
         if (!active) return;
         const fallbackProduct = fallbackProducts.find((item) => item.id === id);
         setProduct(fallbackProduct || null);
+        setSelectedVariantId(fallbackProduct?.variants?.[0]?.id || fallbackProduct?.variantId || "default");
         if (!fallbackProduct) toast.error(error.message || "Could not load this product.");
       })
       .finally(() => { if (active) setLoading(false); });
@@ -43,9 +63,13 @@ export default function ProductDetails() {
     return <main className="mx-auto max-w-3xl px-6 py-32 text-center"><h1 className="text-3xl text-[#29382d]">This piece is not here.</h1><Link to="/" className="mt-6 inline-flex items-center gap-2 text-sm text-[#52644f]"><ArrowLeft size={15} /> Back to the collection</Link></main>;
   }
 
-  const image = productImage(product);
+  const image = selectedVariant?.imageUrls?.[0] || productImage(product);
   const price = Number(product.offerPrice ?? product.price ?? 0);
   const updateCartQuantity = (nextQuantity) => {
+    if (nextQuantity > variantStockCount) {
+      toast.info(variantStockCount === 0 ? "This color is out of stock." : `Only ${variantStockCount} available in this color.`);
+      return;
+    }
     dispatch(setItemQuantity({
       id: cartItemId,
       productId: product.id,
@@ -53,7 +77,7 @@ export default function ProductDetails() {
       name: product.name,
       image,
       price,
-      color: product.color || product.variants?.[0]?.color || "",
+      color: selectedVariant?.color || product.color || "",
       quantity: nextQuantity,
     }));
     if (quantity === 0 && nextQuantity === 1) toast.success(`${product.name} added to your bag`);
@@ -70,14 +94,74 @@ export default function ProductDetails() {
           <p className="mt-5 text-lg text-[#455345]">${price.toFixed(2)}</p>
           <div className="my-7 h-px bg-[#e3e5dd]" />
           <p className="max-w-lg text-sm leading-7 text-[#73796f]">{product.description || "A considered everyday essential, chosen for its thoughtful materials, lasting quality, and simple usefulness."}</p>
-          {(product.color || product.variants?.[0]?.color) && <p className="mt-7 text-xs text-[#747a70]">Color <span className="ml-2 font-medium text-[#354237]">{product.color || product.variants[0].color}</span></p>}
+          <div className="mt-7">
+            <label htmlFor="product-color" className="mb-2 block text-xs text-[#747a70]">Color</label>
+            <select
+              id="product-color"
+              value={variantId}
+              onChange={(event) => setSelectedVariantId(event.target.value)}
+              className="w-full max-w-sm border border-[#dfe2d9] bg-white px-3 py-3 text-sm text-[#354237] focus:border-[#52644f] focus:outline-none"
+            >
+              {variants.map((variant, index) => {
+                const color = variant.color || `Variant ${index + 1}`;
+                const stockCount = Math.max(0, Number(variant.stockCount) || 0);
+                return (
+                  <option key={variant.id || variant.variantId || color} value={variant.id || variant.variantId || "default"}>
+                    {color} — {stockCount > 0 ? `${stockCount} in stock` : "out of stock"}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="mt-2 text-xs text-[#81877c]">
+              {variantStockCount > 0 ? `${variantStockCount} available in ${selectedVariant?.color || "this color"}` : "This color is out of stock"}
+              {variants.length > 1 && ` · ${totalStockCount} total across all colors`}
+            </p>
+          </div>
+          {variants.length > 1 && (
+            <details className="mt-5 max-w-sm border-y border-[#e3e5dd]">
+              <summary className="cursor-pointer py-3 text-xs font-medium text-[#52644f]">
+                View all colors and stock ({variants.length})
+              </summary>
+              <div className="overflow-x-auto pb-3">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-[#81877c]">
+                    <tr>
+                      <th className="py-2 font-medium">Color</th>
+                      <th className="py-2 text-right font-medium">Stock</th>
+                      <th className="py-2 pl-4 text-right font-medium">Availability</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {variants.map((variant, index) => {
+                      const color = variant.color || `Variant ${index + 1}`;
+                      const stockCount = Math.max(0, Number(variant.stockCount) || 0);
+                      const id = variant.id || variant.variantId || "default";
+                      return (
+                        <tr key={id} className="border-t border-[#eef0ea]">
+                          <td className="py-2">
+                            <button type="button" onClick={() => setSelectedVariantId(id)} className="text-[#354237] underline-offset-2 hover:underline">
+                              {color}{id === variantId ? " (selected)" : ""}
+                            </button>
+                          </td>
+                          <td className="py-2 text-right text-[#354237]">{stockCount}</td>
+                          <td className="py-2 pl-4 text-right text-[#81877c]">{stockCount > 0 ? "In stock" : "Out of stock"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          )}
           <div className="mt-8 flex items-center gap-4">
             <div className="flex h-12 items-center border border-[#dfe2d9]">
               <button onClick={() => updateCartQuantity(quantity - 1)} disabled={quantity === 0} className="grid h-11 w-10 place-items-center text-[#5b6459] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Decrease quantity"><Minus size={14} /></button>
               <span className="w-7 text-center text-sm">{quantity}</span>
-              <button onClick={() => updateCartQuantity(quantity + 1)} className="grid h-11 w-10 place-items-center text-[#5b6459]" aria-label="Increase quantity"><Plus size={14} /></button>
+              <button onClick={() => updateCartQuantity(quantity + 1)} disabled={variantStockCount === 0 || quantity >= variantStockCount} className="grid h-11 w-10 place-items-center text-[#5b6459] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Increase quantity"><Plus size={14} /></button>
             </div>
-            <span className="text-xs text-[#81877c]">{quantity > 0 ? `${quantity} in your bag` : "Use + to add to your bag"}</span>
+            <span className="text-xs text-[#81877c]">
+              {variantStockCount === 0 ? "Out of stock in this color" : quantity > 0 ? `${quantity} in your bag` : "Use + to add to your bag"}
+            </span>
           </div>
           <div className="mt-8 border-t border-[#e3e5dd] pt-5 text-xs leading-6 text-[#81877c]">Thoughtfully selected. Made for everyday living.<br />Free shipping on orders over $100.</div>
         </div>

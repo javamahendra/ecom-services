@@ -38,6 +38,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(a -> a.requestMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/inventory/**").hasRole("admin")
+                        .requestMatchers(HttpMethod.POST, "/api/inventory/sync-product").hasRole("admin")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(r -> r.jwt(j -> j.jwtAuthenticationConverter(converter))
                         .authenticationEntryPoint((req, res, ex) -> {

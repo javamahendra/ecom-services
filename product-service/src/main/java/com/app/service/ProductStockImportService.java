@@ -40,12 +40,15 @@ public class ProductStockImportService {
     private final ProductRepository products;
     private final StockImportAuditRepository audits;
     private final StockImportParser parser;
+    private final ProductInventorySync inventorySync;
 
     public ProductStockImportService(
-            ProductRepository products, StockImportAuditRepository audits, StockImportParser parser) {
+            ProductRepository products, StockImportAuditRepository audits, StockImportParser parser,
+            ProductInventorySync inventorySync) {
         this.products = products;
         this.audits = audits;
         this.parser = parser;
+        this.inventorySync = inventorySync;
     }
 
     public StockImportResponse importStock(MultipartFile file, StockImportActor actor) {
@@ -143,7 +146,13 @@ public class ProductStockImportService {
 
         for (String productCode : updatesByProduct.keySet()) {
             try {
-                products.save(productsByCode.get(productCode));
+                Product saved = products.save(productsByCode.get(productCode));
+                for (UpdatedStock update : updatesByProduct.get(productCode)) {
+                    saved.getVariants().stream()
+                            .filter(variant -> variant.getColor().equalsIgnoreCase(update.color()))
+                            .findFirst()
+                            .ifPresent(variant -> inventorySync.publish(saved, variant));
+                }
             } catch (RuntimeException exception) {
                 audit.removeProductSuccesses(productCode, "Could not save product stock changes.");
                 logger.error("Could not save imported stock for productCode={}", productCode, exception);

@@ -32,11 +32,28 @@ public class OrderController {
     public Map<String, Object> search(Authentication auth,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        return orders.search(auth.getName(), isStaff(auth), status, search, page, size, sortBy, direction);
+        return orders.search(auth.getName(), isStaff(auth), status, search, fromDate, toDate,
+                page, size, sortBy, direction);
+    }
+
+    @GetMapping("/count")
+    public long count(Authentication auth) {
+        return orders.count(auth.getName(), isStaff(auth));
+    }
+
+    @PostMapping("/dispatches/sync")
+    public Map<String, Long> syncDispatches(Authentication auth) {
+        if (!isStaff(auth)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Only administrators and managers can synchronize dispatches");
+        }
+        return Map.of("queued", orders.syncDispatches());
     }
 
     @GetMapping("/{id}")

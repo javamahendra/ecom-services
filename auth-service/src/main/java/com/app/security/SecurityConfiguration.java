@@ -55,6 +55,7 @@ public class SecurityConfiguration {
                 .requestMatchers("/api/auth/password-reset").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/users/admin").hasRole("admin")
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users/count").hasRole("admin")
                 .requestMatchers(HttpMethod.GET, "/api/users").hasRole("admin")
                 .requestMatchers(HttpMethod.PUT, "/api/users/*/role").hasRole("admin")
                 .requestMatchers(HttpMethod.PUT, "/api/users/*/status").hasRole("admin")

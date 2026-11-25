@@ -1,4 +1,4 @@
-import { ArrowLeft, Heart, Image, LayoutDashboard, LogOut, MapPin, Package, Store, Users } from "lucide-react";
+import { ArrowLeft, Heart, Image, LayoutDashboard, LogOut, MapPin, Package, Store, Truck, Users } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { clearUser } from "../../store/slices/authSlice";
@@ -55,9 +55,15 @@ export default function PanelLayout({ panel }) {
             {isStaff && <NavLink to={`${staffBase}/products`} className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? "bg-[#e9ece5] font-medium text-[#314638]" : "text-[#687064] hover:bg-[#eeefe9]"}`}>
               <Package size={16} /> Products
             </NavLink>}
+            {isAdmin && <NavLink to="/admin/inventory" className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? "bg-[#e9ece5] font-medium text-[#314638]" : "text-[#687064] hover:bg-[#eeefe9]"}`}>
+              <Package size={16} /> Inventory
+            </NavLink>}
             {isStaff && <NavLink to={`${staffBase}/orders`} className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? "bg-[#e9ece5] font-medium text-[#314638]" : "text-[#687064] hover:bg-[#eeefe9]"}`}>
               <Package size={16} /> Orders
             </NavLink>}
+            <NavLink to={`${home}/dispatches`} className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? "bg-[#e9ece5] font-medium text-[#314638]" : "text-[#687064] hover:bg-[#eeefe9]"}`}>
+              <Truck size={16} /> Dispatches
+            </NavLink>
             {isAdmin && <NavLink to="/admin/users" className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? "bg-[#e9ece5] font-medium text-[#314638]" : "text-[#687064] hover:bg-[#eeefe9]"}`}>
               <Users size={16} /> Users
             </NavLink>}

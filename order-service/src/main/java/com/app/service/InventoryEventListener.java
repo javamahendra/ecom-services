@@ -15,11 +15,12 @@ public class InventoryEventListener {
     public void onInventoryEvent(InventoryEvent event) {
         String status = switch (event.status()) {
             case "RESERVED" -> "CONFIRMED";
+            case "PARTIALLY_RESERVED" -> "PARTIALLY_CONFIRMED";
             case "REJECTED" -> "REJECTED";
             case "CANCELLED" -> "CANCELLED";
             default -> null;
         };
-        if (status != null) orders.updateStatus(event.orderId(), status);
+        if (status != null) orders.updateStatus(event.orderId(), status, event.itemResults());
         log.info("Inventory result received: orderId={}, status={}", event.orderId(), event.status());
     }
 }

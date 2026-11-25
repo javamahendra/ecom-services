@@ -2,6 +2,7 @@ package com.app.service;
 
 import com.app.entity.Product;
 import com.app.entity.ProductVariant;
+import com.app.event.InventoryStockChangedEvent;
 import com.app.request.ProductRequest;
 import com.app.request.ProductVariantRequest;
 import com.app.request.VariantUpdateRequest;
@@ -17,6 +18,8 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.security.SecureRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,14 +45,17 @@ public class ProductService {
             Map.entry("discount", "discount"),
             Map.entry("listDate", "listDate"),
             Map.entry("stockCount", "stockCount"),
+            Map.entry("productCode", "productCode"),
             Map.entry("createdAt", "createdAt"));
 
     private final ProductRepository products;
     private final MongoTemplate mongo;
+    private final ProductInventorySync inventorySync;
 
-    public ProductService(ProductRepository products, MongoTemplate mongo) {
+    public ProductService(ProductRepository products, MongoTemplate mongo, ProductInventorySync inventorySync) {
         this.products = products;
         this.mongo = mongo;
+        this.inventorySync = inventorySync;
     }
 
     public ProductResponse create(ProductRequest request) {
@@ -58,7 +64,9 @@ public class ProductService {
                 request.baseColor(), request.price(), request.discount(), request.offerPrice(),
                 request.listDate(), createVariants(request.variants()));
         product.assignProductCode(generateUniqueProductCode());
-        ProductResponse response = toResponse(products.save(product));
+        Product saved = products.save(product);
+        inventorySync.publishSnapshot(saved);
+        ProductResponse response = toResponse(saved);
         logger.info("Product created: id={}, name={}, type={}, category={}",
                 response.id(), response.name(), response.productType(), response.category());
         return response;
@@ -66,6 +74,7 @@ public class ProductService {
 
     public ProductResponse update(String id, ProductRequest request) {
         Product product = find(id);
+        String previousName = product.getName();
         Map<String, ProductVariant> existingVariants = product.getVariants().stream()
                 .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
         List<ProductVariant> updatedVariants = new ArrayList<>();
@@ -93,7 +102,9 @@ public class ProductService {
         product.update(request.name(), request.description(), request.category(), request.productType(),
                 request.baseColor(), request.price(), request.discount(), request.offerPrice(),
                 request.listDate(), updatedVariants);
-        ProductResponse response = toResponse(products.save(product));
+        Product saved = products.save(product);
+        publishStockChanges(previousName, saved, existingVariants);
+        ProductResponse response = toResponse(saved);
         logger.info("Product updated: id={}, name={}, stockCount={}",
                 response.id(), response.name(), response.stockCount());
         return response;
@@ -101,15 +112,19 @@ public class ProductService {
 
     public void delete(String id) {
         Product product = find(id);
+        product.getVariants().forEach(variant ->
+                inventorySync.remove(product.getId(), product.getProductCode(), variant.getId()));
         products.delete(product);
         logger.warn("Product deleted: id={}, name={}", id, product.getName());
     }
 
     public ProductResponse addVariant(String id, ProductVariantRequest request) {
         Product product = find(id);
-        product.addVariant(new ProductVariant(
-                request.color(), request.imageUrls(), request.stockCount()));
-        ProductResponse response = toResponse(products.save(product));
+        ProductVariant addedVariant = new ProductVariant(request.color(), request.imageUrls(), request.stockCount());
+        product.addVariant(addedVariant);
+        Product saved = products.save(product);
+        inventorySync.publish(saved, addedVariant);
+        ProductResponse response = toResponse(saved);
         logger.info("Variant added: productId={}, color={}, stockCount={}",
                 id, request.color(), request.stockCount());
         return response;
@@ -117,8 +132,18 @@ public class ProductService {
 
     public ProductResponse updateVariant(String id, UUID variantId, VariantUpdateRequest request) {
         Product product = find(id);
+        ProductVariant oldVariant = findVariant(product, variantId);
+        int previousStock = oldVariant.getStockCount();
+        String previousColor = oldVariant.getColor();
+        String previousName = product.getName();
         product.updateVariant(variantId, request.color(), request.imageUrls(), request.stockCount());
-        ProductResponse response = toResponse(products.save(product));
+        Product saved = products.save(product);
+        ProductVariant savedVariant = findVariant(saved, variantId);
+        if (previousStock != savedVariant.getStockCount()) inventorySync.publish(saved, savedVariant);
+        else if (!previousColor.equals(savedVariant.getColor()) || !previousName.equals(saved.getName())) {
+            inventorySync.publishMetadata(saved, savedVariant);
+        }
+        ProductResponse response = toResponse(saved);
         logger.info("Variant updated: productId={}, variantId={}, color={}, stockCount={}",
                 id, variantId, request.color(), request.stockCount());
         return response;
@@ -126,8 +151,11 @@ public class ProductService {
 
     public ProductResponse updateVariantStock(String id, UUID variantId, int stockCount) {
         Product product = find(id);
-        ProductVariant variant = product.updateVariantStock(variantId, stockCount);
-        ProductResponse response = toResponse(products.save(product));
+        product.updateVariantStock(variantId, stockCount);
+        Product saved = products.save(product);
+        ProductVariant variant = findVariant(saved, variantId);
+        inventorySync.publish(saved, variant);
+        ProductResponse response = toResponse(saved);
         logger.info("Variant stock updated: productId={}, variantId={}, color={}, stockCount={}, inStock={}",
                 id, variantId, variant.getColor(), stockCount, variant.isInStock());
         return response;
@@ -145,9 +173,37 @@ public class ProductService {
     public ProductResponse deleteVariant(String id, UUID variantId) {
         Product product = find(id);
         product.deleteVariant(variantId);
-        ProductResponse response = toResponse(products.save(product));
+        Product saved = products.save(product);
+        inventorySync.remove(saved.getId(), saved.getProductCode(), variantId.toString());
+        ProductResponse response = toResponse(saved);
         logger.warn("Variant deleted: productId={}, variantId={}", id, variantId);
         return response;
+    }
+
+    private void publishStockChanges(String previousName, Product saved,
+                                     Map<String, ProductVariant> previousVariants) {
+        Set<String> currentVariantIds = saved.getVariants().stream()
+                .map(ProductVariant::getId).collect(Collectors.toSet());
+        for (ProductVariant variant : saved.getVariants()) {
+            ProductVariant oldVariant = previousVariants.get(variant.getId());
+            if (oldVariant == null || oldVariant.getStockCount() != variant.getStockCount()) {
+                inventorySync.publish(saved, variant);
+            } else if (!java.util.Objects.equals(oldVariant.getColor(), variant.getColor())
+                    || !java.util.Objects.equals(previousName, saved.getName())) {
+                inventorySync.publishMetadata(saved, variant);
+            }
+        }
+        previousVariants.keySet().stream()
+                .filter(variantId -> !currentVariantIds.contains(variantId))
+                .forEach(variantId ->
+                        inventorySync.remove(saved.getId(), saved.getProductCode(), variantId));
+    }
+
+    private ProductVariant findVariant(Product product, UUID variantId) {
+        return product.getVariants().stream()
+                .filter(variant -> variant.getId().equals(variantId.toString()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product variant not found"));
     }
 
     public ProductResponse findById(String id) {
@@ -163,6 +219,12 @@ public class ProductService {
             BigDecimal maxPrice,
             Boolean inStock,
             Integer minStock,
+            Integer maxStock,
+            String stockOperator,
+            Integer stockValue,
+            Integer colorCount,
+            BigDecimal minDiscount,
+            BigDecimal maxDiscount,
             LocalDate listedFrom,
             LocalDate listedTo,
             String sortBy,
@@ -172,6 +234,25 @@ public class ProductService {
 
         if (page < 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be zero or greater");
         if (size < 1 || size > 100) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "size must be between 1 and 100");
+        if ((minPrice != null && minPrice.signum() < 0) || (maxPrice != null && maxPrice.signum() < 0)
+                || (minStock != null && minStock < 0) || (maxStock != null && maxStock < 0)
+                || (colorCount != null && colorCount < 0)
+                || (minDiscount != null && (minDiscount.signum() < 0 || minDiscount.compareTo(BigDecimal.valueOf(100)) > 0))
+                || (maxDiscount != null && (maxDiscount.signum() < 0 || maxDiscount.compareTo(BigDecimal.valueOf(100)) > 0))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filter values are outside their allowed range");
+        }
+        if ((minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0)
+                || (minStock != null && maxStock != null && minStock > maxStock)
+                || (minDiscount != null && maxDiscount != null && minDiscount.compareTo(maxDiscount) > 0)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimum filters must not exceed maximum filters");
+        }
+        if ((stockOperator == null) != (stockValue == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "stockOperator and stockValue must be provided together");
+        }
+        if (stockValue != null && stockValue < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stockValue must be non-negative");
+        }
 
         String sortField = SORT_FIELDS.getOrDefault(sortBy == null ? "createdAt" : sortBy, "createdAt");
         Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction)
@@ -192,10 +273,28 @@ public class ProductService {
         if (category != null && !category.isBlank()) conditions.add(Criteria.where("category").regex(category, "i"));
         if (productType != null && !productType.isBlank()) conditions.add(Criteria.where("productType").regex(productType, "i"));
         if (colors != null && !colors.isEmpty()) conditions.add(Criteria.where("variants.color").in(colors));
+        if (colorCount != null) conditions.add(Criteria.where("variants").size(colorCount));
         if (minPrice != null) conditions.add(Criteria.where("offerPrice").gte(minPrice));
         if (maxPrice != null) conditions.add(Criteria.where("offerPrice").lte(maxPrice));
         if (inStock != null) conditions.add(Criteria.where("inStock").is(inStock));
         if (minStock != null) conditions.add(Criteria.where("stockCount").gte(minStock));
+        if (maxStock != null) conditions.add(Criteria.where("stockCount").lte(maxStock));
+        if (stockOperator != null) {
+            Criteria stock = Criteria.where("stockCount");
+            switch (stockOperator.toLowerCase(java.util.Locale.ROOT)) {
+                case "eq" -> stock.is(stockValue);
+                case "gte" -> stock.gte(stockValue);
+                case "lte" -> stock.lte(stockValue);
+                case "gt" -> stock.gt(stockValue);
+                case "lt" -> stock.lt(stockValue);
+                case "ne" -> stock.ne(stockValue);
+                default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "stockOperator must be one of eq, gte, lte, gt, lt, ne");
+            }
+            conditions.add(stock);
+        }
+        if (minDiscount != null) conditions.add(Criteria.where("discount").gte(minDiscount));
+        if (maxDiscount != null) conditions.add(Criteria.where("discount").lte(maxDiscount));
         if (listedFrom != null) conditions.add(Criteria.where("listDate").gte(listedFrom));
         if (listedTo != null) conditions.add(Criteria.where("listDate").lte(listedTo));
         if (!conditions.isEmpty()) criteria.andOperator(conditions.toArray(Criteria[]::new));
@@ -212,6 +311,66 @@ public class ProductService {
     private Product find(String id) {
         return products.findByProductCode(id).or(() -> products.findById(id)).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
+    }
+
+    public long count() {
+        return products.count();
+    }
+
+    public Map<String, Integer> syncInventory() {
+        int syncedVariants = 0;
+        List<CompletableFuture<?>> acknowledgements = new ArrayList<>();
+        for (Product product : products.findAll()) {
+            inventorySync.reconcileSnapshot(product, acknowledgements);
+            syncedVariants += product.getVariants().size();
+        }
+        try {
+            CompletableFuture.allOf(acknowledgements.toArray(CompletableFuture[]::new)).join();
+        } catch (CompletionException exception) {
+            logger.error("Catalog stock reconciliation could not be published to Kafka", exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Could not publish catalog stock reconciliation. Try again when Kafka is available.",
+                    exception.getCause());
+        }
+        logger.info("Catalog stock synchronization requested: variants={}", syncedVariants);
+        return Map.of("syncedVariants", syncedVariants);
+    }
+
+    public Map<String, Integer> syncInventoryMetadata() {
+        int syncedVariants = 0;
+        List<CompletableFuture<?>> acknowledgements = new ArrayList<>();
+        for (Product product : products.findAll()) {
+            inventorySync.publishMetadataSnapshot(product, acknowledgements);
+            syncedVariants += product.getVariants().size();
+        }
+        try {
+            CompletableFuture.allOf(acknowledgements.toArray(CompletableFuture[]::new)).join();
+        } catch (CompletionException exception) {
+            logger.error("Catalog metadata synchronization could not be published to Kafka", exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Could not publish catalog metadata. Try again when Kafka is available.",
+                    exception.getCause());
+        }
+        logger.info("Catalog metadata synchronization requested: variants={}", syncedVariants);
+        return Map.of("syncedVariants", syncedVariants);
+    }
+
+    public void applyInventoryStock(InventoryStockChangedEvent event) {
+        Product product = products.findById(event.productId()).orElse(null);
+        if (product == null) {
+            logger.warn("Inventory stock update references missing product: productId={}, variantId={}",
+                    event.productId(), event.variantId());
+            return;
+        }
+        try {
+            ProductVariant variant = product.updateVariantStock(UUID.fromString(event.variantId()), event.quantity());
+            products.save(product);
+            logger.info("Inventory stock reflected in catalog: productId={}, variantId={}, quantity={}",
+                    product.getId(), variant.getId(), variant.getStockCount());
+        } catch (IllegalArgumentException | ResponseStatusException exception) {
+            logger.warn("Inventory stock update references missing/invalid variant: productId={}, variantId={}",
+                    event.productId(), event.variantId(), exception);
+        }
     }
 
     public void backfillProductCodes() {

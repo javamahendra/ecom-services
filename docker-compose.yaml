@@ -45,6 +45,21 @@ services:
     networks:
       - ecom_service-net
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: ecom-kafka-ui
+    restart: unless-stopped
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ecom-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8085:8080"
+    depends_on:
+      - kafka
+    networks:
+      - ecom_service-net
+
   mysql:
     image: mysql:8.4
     container_name: keycloak-mysql
@@ -167,6 +182,7 @@ services:
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/product_service
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecomservice/protocol/openid-connect/certs
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8090}
@@ -176,6 +192,7 @@ services:
       - ./logs:/app/logs
     depends_on:
       - mongodb
+      - kafka
       - keycloak
       - eureka-server
     networks:

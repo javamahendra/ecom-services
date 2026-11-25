@@ -1,6 +1,7 @@
 package com.app.entity;
 
 import com.app.event.OrderEvent;
+import com.app.event.InventoryEvent;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,7 +26,14 @@ public class DispatchRecord {
     public DispatchRecord(OrderEvent event) {
         orderId = event.orderId(); userId = event.userId(); email = event.email();
         items = event.items(); shippingAddress = event.shippingAddress(); total = event.total();
-        status = "AWAITING_INVENTORY"; createdAt = Instant.now(); updatedAt = createdAt;
+        status = "DISPATCH_SYNC".equals(event.eventType()) && event.status() != null ? switch (event.status()) {
+            case "CONFIRMED" -> "READY_TO_DISPATCH";
+            case "REJECTED" -> "INVENTORY_REJECTED";
+            case "CANCELLED" -> "CANCELLED";
+            default -> "AWAITING_INVENTORY";
+        } : "AWAITING_INVENTORY";
+        createdAt = event.occurredAt() == null ? Instant.now() : event.occurredAt();
+        updatedAt = createdAt;
         history.add(new StatusEntry(status, "Order received", updatedAt));
     }
     public String getOrderId() { return orderId; }
@@ -39,6 +47,30 @@ public class DispatchRecord {
     public List<StatusEntry> getHistory() { return history; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public void applyInventoryResult(String status, List<InventoryEvent.ItemResult> itemResults, String message) {
+        if ("PARTIALLY_RESERVED".equals(status) && itemResults != null) {
+            items = itemResults.stream()
+                    .filter(result -> "RESERVED".equals(result.status()))
+                    .map(InventoryEvent.ItemResult::itemIndex)
+                    .filter(index -> index >= 0 && index < items.size())
+                    .distinct()
+                    .map(items::get)
+                    .toList();
+            total = items.stream()
+                    .map(item -> item.unitPrice().multiply(BigDecimal.valueOf(item.quantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        String dispatchStatus = switch (status) {
+            case "RESERVED", "PARTIALLY_RESERVED" -> "READY_TO_DISPATCH";
+            case "REJECTED" -> "INVENTORY_REJECTED";
+            case "CANCELLED" -> "CANCELLED";
+            default -> this.status;
+        };
+        if (dispatchStatus != null && !dispatchStatus.equals(this.status)) {
+            updateStatus(dispatchStatus, null, message);
+        }
+    }
+
     public void updateStatus(String status, String trackingNumber, String note) {
         this.status = status;
         if (trackingNumber != null && !trackingNumber.isBlank()) this.trackingNumber = trackingNumber;

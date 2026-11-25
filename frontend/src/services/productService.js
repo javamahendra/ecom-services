@@ -4,6 +4,10 @@ export function getProducts(query, token) {
   return request(`/api/products?${query}`, { token });
 }
 
+export function getProductCount(token) {
+  return request("/api/products/count", { token });
+}
+
 export function getProduct(id, token) {
   return request(`/api/products/${encodeURIComponent(id)}`, { token });
 }

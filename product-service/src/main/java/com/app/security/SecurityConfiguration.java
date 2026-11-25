@@ -53,6 +53,8 @@ public class SecurityConfiguration {
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/products/stock-import").hasAnyRole("admin", "manager")
+                .requestMatchers(HttpMethod.POST, "/api/products/inventory/sync").hasRole("admin")
+                .requestMatchers(HttpMethod.POST, "/api/products/inventory/metadata-sync").hasRole("admin")
                 .requestMatchers(HttpMethod.POST, "/api/products").hasAnyRole("admin", "manager")
                 .requestMatchers(HttpMethod.POST, "/api/products/*/variants").hasRole("admin")
                 .requestMatchers(HttpMethod.PATCH, "/api/products/*/variants/*/stock").hasAnyRole("admin", "manager")

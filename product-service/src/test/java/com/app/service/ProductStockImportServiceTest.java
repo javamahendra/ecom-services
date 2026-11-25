@@ -23,15 +23,17 @@ class ProductStockImportServiceTest {
     void recordsUploaderFileAndVariantStockChange() {
         ProductRepository products = org.mockito.Mockito.mock(ProductRepository.class);
         StockImportAuditRepository audits = org.mockito.Mockito.mock(StockImportAuditRepository.class);
+        ProductInventorySync inventorySync = org.mockito.Mockito.mock(ProductInventorySync.class);
         Product product = new Product("Laptop", "Portable computer", "Computers", "Laptop",
                 "Black", BigDecimal.valueOf(999), BigDecimal.ZERO, BigDecimal.valueOf(999),
                 LocalDate.now(), List.of(new ProductVariant("Black", List.of("https://example.test/image.jpg"), 4)));
         product.assignProductCode("ABC123DEF4");
         when(audits.save(any(StockImportAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(products.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(products.findAllByProductCodeIn(anyList())).thenReturn(List.of(product));
 
         ProductStockImportService service = new ProductStockImportService(
-                products, audits, new StockImportParser());
+                products, audits, new StockImportParser(), inventorySync);
         MockMultipartFile file = new MockMultipartFile("file", "weekly-stock.csv", "text/csv",
                 "productCode,color,stockCount\nABC123DEF4,Black,12\n".getBytes());
 
@@ -40,6 +42,7 @@ class ProductStockImportServiceTest {
         assertEquals(1, response.updatedRows());
         assertEquals(4, response.updates().getFirst().previousStockCount());
         assertEquals(12, response.updates().getFirst().stockCount());
+        verify(inventorySync).publish(any(Product.class), any(ProductVariant.class));
         ArgumentCaptor<StockImportAudit> auditCaptor = ArgumentCaptor.forClass(StockImportAudit.class);
         verify(audits, org.mockito.Mockito.atLeastOnce()).save(auditCaptor.capture());
         StockImportAudit audit = auditCaptor.getAllValues().getLast();
@@ -61,15 +64,17 @@ class ProductStockImportServiceTest {
     void appliesValidRowsAndReportsInvalidRowsSeparately() {
         ProductRepository products = org.mockito.Mockito.mock(ProductRepository.class);
         StockImportAuditRepository audits = org.mockito.Mockito.mock(StockImportAuditRepository.class);
+        ProductInventorySync inventorySync = org.mockito.Mockito.mock(ProductInventorySync.class);
         Product product = new Product("Laptop", "Portable computer", "Computers", "Laptop",
                 "Black", BigDecimal.valueOf(999), BigDecimal.ZERO, BigDecimal.valueOf(999),
                 LocalDate.now(), List.of(new ProductVariant("Black", List.of("https://example.test/image.jpg"), 4)));
         product.assignProductCode("ABC123DEF4");
         when(audits.save(any(StockImportAudit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(products.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(products.findAllByProductCodeIn(anyList())).thenReturn(List.of(product));
 
         ProductStockImportService service = new ProductStockImportService(
-                products, audits, new StockImportParser());
+                products, audits, new StockImportParser(), inventorySync);
         MockMultipartFile file = new MockMultipartFile("file", "weekly-stock.csv", "text/csv",
                 ("productCode,color,stockCount\n"
                         + "ABC123DEF4,Black,12\n"

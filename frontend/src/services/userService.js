@@ -8,6 +8,10 @@ export function getUsers(token) {
   return request("/api/users", { token });
 }
 
+export function getUserCount(token) {
+  return request("/api/users/count", { token });
+}
+
 export function getUserProfile(id, token) {
   return request(`/api/users/${encodeURIComponent(id)}`, { token });
 }

@@ -11,6 +11,8 @@ import com.app.repository.DispatchRepository;
 import com.app.repository.PendingInventoryStatusRepository;
 import com.app.request.AddressRequest;
 import com.app.request.DispatchStatusRequest;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -96,11 +98,12 @@ public class DispatchService {
     }
 
     public void orderEvent(OrderEvent event) {
-        if ("ORDER_CREATED".equals(event.eventType())) {
+        if ("ORDER_CREATED".equals(event.eventType()) || "DISPATCH_SYNC".equals(event.eventType())) {
             DispatchRecord record = dispatches.findById(event.orderId())
                     .orElseGet(() -> dispatches.save(new DispatchRecord(event)));
+            if ("DISPATCH_SYNC".equals(event.eventType())) return;
             pendingInventory.findById(event.orderId()).ifPresent(pending -> {
-                applyInventoryStatus(record, pending.getStatus(), pending.getMessage());
+                record.applyInventoryResult(pending.getStatus(), pending.getItemResults(), pending.getMessage());
                 dispatches.save(record);
                 pendingInventory.delete(pending);
             });
@@ -119,22 +122,13 @@ public class DispatchService {
         DispatchRecord record = dispatches.findById(event.orderId()).orElse(null);
         if (record == null) {
             pendingInventory.save(new PendingInventoryStatus(
-                    event.orderId(), event.status(), event.message(), event.occurredAt()));
+                    event.orderId(), event.status(), event.message(), event.occurredAt(), event.itemResults()));
             return;
         }
-        applyInventoryStatus(record, event.status(), event.message());
+        record.applyInventoryResult(event.status(), event.itemResults(), event.message());
         dispatches.save(record);
         log.info("Dispatch status updated from inventory: orderId={}, status={}",
                 event.orderId(), record.getStatus());
-    }
-    private void applyInventoryStatus(DispatchRecord record, String status, String message) {
-        String next = switch (status) {
-            case "RESERVED" -> "READY_TO_DISPATCH";
-            case "REJECTED" -> "INVENTORY_REJECTED";
-            case "CANCELLED" -> "CANCELLED";
-            default -> record.getStatus();
-        };
-        if (!next.equals(record.getStatus())) record.updateStatus(next, null, message);
     }
     public DispatchRecord updateStatus(String orderId, DispatchStatusRequest request) {
         DispatchRecord record = dispatches.findById(orderId)
@@ -185,6 +179,7 @@ public class DispatchService {
         return record;
     }
     public Map<String, Object> search(String userId, boolean admin, String status, String search,
+                                      String fromDate, String toDate,
                                       int page, int size, String sortBy, String direction) {
         if (page < 0 || size < 1 || size > 100)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0 and size between 1 and 100");
@@ -197,6 +192,7 @@ public class DispatchService {
                     Criteria.where("trackingNumber").regex(term, "i"),
                     Criteria.where("shippingAddress.city").regex(term, "i")));
         }
+        addCreatedAtRange(filters, fromDate, toDate);
         Query query = new Query(filters.isEmpty() ? new Criteria() :
                 new Criteria().andOperator(filters.toArray(Criteria[]::new)));
         long total = mongo.count(query, DispatchRecord.class);
@@ -208,5 +204,32 @@ public class DispatchService {
         int pages = (int) Math.ceil((double) total / size);
         return Map.of("content", content, "page", page, "size", size, "totalElements", total,
                 "totalPages", pages, "first", page == 0, "last", page + 1 >= Math.max(1, pages));
+    }
+
+    private void addCreatedAtRange(List<Criteria> filters, String fromDate, String toDate) {
+        try {
+            LocalDate from = parseDate(fromDate);
+            LocalDate to = parseDate(toDate);
+            if (from != null && to != null && from.isAfter(to)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fromDate must be on or before toDate");
+            }
+            if (from != null || to != null) {
+                Criteria range = Criteria.where("createdAt");
+                if (from != null) range.gte(from.atStartOfDay().toInstant(ZoneOffset.UTC));
+                if (to != null) range.lt(to.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC));
+                filters.add(range);
+            }
+        } catch (java.time.format.DateTimeParseException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dates must use YYYY-MM-DD format", exception);
+        }
+    }
+
+    private LocalDate parseDate(String date) {
+        return date == null || date.isBlank() ? null : LocalDate.parse(date);
+    }
+
+    public long count(String userId, boolean admin) {
+        Query query = admin ? new Query() : Query.query(Criteria.where("userId").is(userId));
+        return mongo.count(query, DispatchRecord.class);
     }
 }
