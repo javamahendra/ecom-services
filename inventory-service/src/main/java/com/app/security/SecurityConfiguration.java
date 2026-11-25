@@ -37,6 +37,7 @@ public class SecurityConfiguration {
         http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(a -> a.requestMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/inventory/**").hasRole("admin")
                         .requestMatchers(HttpMethod.POST, "/api/inventory/sync-product").hasRole("admin")
                         .anyRequest().authenticated())

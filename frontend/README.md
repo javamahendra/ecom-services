@@ -41,7 +41,32 @@ Follow these conventions when adding or changing frontend code:
 - Use semantic HTML, accessible labels, and clear loading, empty, and error states for user-facing flows.
 - Keep imports explicit, remove unused code, and avoid committing generated output, dependencies, or local environment files.
 
-In local development, Vite proxies `/api` requests to the gateway at `http://localhost:8090`, avoiding browser CORS issues even when Vite selects a different port. Set `VITE_API_URL` in `.env` when the frontend is hosted separately. Product browsing falls back to the included curated collection if the product API is unavailable. Registration and sign-in use `/api/users` and `/api/auth/login`.
+## Local URLs and ports
+
+| App or service | Local URL / address | Port |
+| --- | --- | ---: |
+| Frontend (Vite default) | `http://localhost:5173` | 5173 |
+| API Gateway | `http://localhost:8090` | 8090 |
+| Grafana | `http://localhost:3001` | 3001 |
+| Prometheus | `http://localhost:9090` | 9090 |
+
+The Grafana **E-commerce Services Overview** dashboard is at
+`http://localhost:3001/d/ecom-services-overview/e-commerce-services-overview`.
+It includes service health, request counts, Kafka activity, logs, and a link
+to distributed traces in Tempo.
+
+Vite may choose another port if 5173 is occupied; use the URL printed by
+`npm run dev`. In local development, Vite proxies `/api` requests to the
+gateway at `http://localhost:8090`, avoiding browser CORS issues even when
+Vite selects a different port. Set `VITE_API_URL` in `.env` when the frontend
+is hosted separately. Product browsing falls back to the included curated
+collection if the product API is unavailable. Registration and sign-in use
+`/api/users` and `/api/auth/login`.
+
+Grafana's default local-development login is `admin` / `admin`; set
+`GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` to change it. The complete
+service, database, metrics, logs, traces, and port reference is in
+[`BACKEND_MICROSERVICES.md`](../BACKEND_MICROSERVICES.md).
 
 Login and registration use React Hook Form with Zod validation. The authenticated user account at `/account` shows profile details and order history. Keycloak realm roles `admin`, `manager`, and `user` control staff access: admins can manage users, banners, orders, and create, search, edit, or delete catalog products at `/admin`; the catalog is server-paginated and loads 20 products at a time. Managers can manage order dispatch statuses and create products at `/manager`; regular users can access their account. API authorization remains enforced by the backend.
 

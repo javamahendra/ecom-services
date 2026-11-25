@@ -1,11 +1,113 @@
+x-otel-environment: &otel-environment
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+  OTEL_TRACES_SAMPLER_ARG: "0.1"
+
 services:
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: ecom-prometheus
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - ecom_service-net
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: ecom-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks:
+      - ecom_service-net
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    container_name: ecom-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "127.0.0.1:3200:3200"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    networks:
+      - ecom_service-net
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    container_name: ecom-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/collector.yml"]
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./observability/otel/collector.yml:/etc/otelcol-contrib/collector.yml:ro
+    depends_on:
+      - tempo
+    networks:
+      - ecom_service-net
+
+  alloy:
+    image: grafana/alloy:v1.8.3
+    container_name: ecom-alloy
+    restart: unless-stopped
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./logs:/var/log/ecom:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      - loki
+    networks:
+      - ecom_service-net
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: ecom-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - ecom_service-net
+
   eureka-server:
     build:
       context: ./eureka-server
     container_name: eureka-server
     restart: unless-stopped
+    environment:
+      <<: *otel-environment
     ports:
       - "8761:8761"
+    volumes:
+      - ./logs:/app/logs
     networks:
       - ecom_service-net
 
@@ -111,6 +213,7 @@ services:
     container_name: auth-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MYSQL_URL: jdbc:mysql://mysql:3306/auth_service
@@ -146,6 +249,7 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       AUTH_SERVICE_URL: http://auth-service:8091
@@ -179,6 +283,7 @@ services:
     container_name: product-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/product_service
@@ -204,6 +309,7 @@ services:
     container_name: order-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/order_service
@@ -229,6 +335,7 @@ services:
     container_name: inventory-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/inventory_service
@@ -254,6 +361,7 @@ services:
     container_name: notification-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/notification_service
@@ -290,6 +398,7 @@ services:
     container_name: dispatch-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/dispatch_service
@@ -315,6 +424,7 @@ services:
     container_name: cart-service
     restart: unless-stopped
     environment:
+      <<: *otel-environment
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/cart_service
@@ -337,6 +447,11 @@ services:
 volumes:
   mysql_data:
   mongodb_data:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+  alloy_data:
+  grafana_data:
 
 networks:
   ecom_service-net:

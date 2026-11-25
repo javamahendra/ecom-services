@@ -60,6 +60,19 @@ paths:
             application/json:
               schema:
                 type: object
+  /actuator/prometheus:
+    get:
+      tags: [API Gateway]
+      summary: Export gateway metrics for Prometheus
+      description: Metrics endpoint used by the local Prometheus service.
+      security: []
+      responses:
+        '200':
+          description: Prometheus text-format metrics
+          content:
+            text/plain:
+              schema:
+                type: string
   /api/auth/login:
     post:
       tags: [Authentication]

@@ -46,6 +46,35 @@ gateway's OpenAPI page. Eureka keeps track of service instances. Kafka carries
 events for work that does not need to be completed as part of the original HTTP
 request.
 
+## Local URLs and ports
+
+These are the host addresses published by `docker-compose.yaml`. The
+application services can be reached directly for development, but the frontend
+normally sends API requests through the gateway.
+
+| Service | Local URL / address | Port |
+| --- | --- | ---: |
+| Frontend (Vite default) | `http://localhost:5173` | 5173 |
+| API Gateway | `http://localhost:8090` | 8090 |
+| Auth Service | `http://localhost:8091` | 8091 |
+| Cart Service | `http://localhost:8092` | 8092 |
+| Dispatch Service | `http://localhost:8093` | 8093 |
+| Inventory Service | `http://localhost:8094` | 8094 |
+| Notification Service | `http://localhost:8095` | 8095 |
+| Order Service | `http://localhost:8096` | 8096 |
+| Product Service | `http://localhost:8097` | 8097 |
+| Eureka | `http://localhost:8761` | 8761 |
+| Keycloak | `http://localhost:8081` | 8081 |
+| Kafka UI | `http://localhost:8085` | 8085 |
+| Kafka (host client connection) | `localhost:9092` | 9092 |
+| MongoDB | `localhost:27017` | 27017 |
+| MySQL | `localhost:3306` | 3306 |
+
+Vite may select another port if 5173 is occupied; use the URL printed by
+`npm run dev`. Database and Kafka addresses are connection endpoints, not
+browser pages. Inside the Compose network, services use their Compose service
+names and container ports instead of `localhost`.
+
 ## What each service does
 
 | Service | Purpose |
@@ -63,6 +92,56 @@ request.
 | **Kafka** | Message broker for asynchronous event delivery between services. |
 | **MongoDB / MySQL** | Persistence infrastructure configured for the services; service data is kept in named databases. |
 | **Kafka UI** | Local operations interface for inspecting Kafka. It is not part of the customer request path. |
+
+## Local observability
+
+The Compose stack includes Prometheus for service metrics, Grafana Alloy for
+shipping the existing service log files to Loki, OpenTelemetry Collector for
+OTLP traces, Tempo for trace storage, and Grafana for exploring all three
+signals. The Spring services expose Micrometer Prometheus metrics, export
+sampled traces (10% by default) to the collector, and include trace/span IDs in
+their log pattern. Spring MVC server requests, injected `RestClient.Builder`
+calls, and Kafka producers/consumers are instrumented; trace context is
+propagated over HTTP and Kafka. No application request, database, or Kafka flow
+depends on the observability containers.
+
+Start the stack with `docker compose up -d`. The interfaces and OTLP receiver
+are bound to loopback on the host:
+
+| Component | Host URL / port | Purpose |
+| --- | --- | --- |
+| Grafana | `http://localhost:3001` | Explore metrics, logs, and traces; provisioned datasources are Prometheus, Loki, and Tempo. |
+| Prometheus | `http://localhost:9090` | Query metrics and check targets at `/targets`. |
+| Loki | `http://localhost:3100` | Log API; normally queried through Grafana. |
+| Tempo | `http://localhost:3200` | Trace API; normally queried through Grafana. |
+| OTLP gRPC | `localhost:4317` | OpenTelemetry Collector receiver. |
+| OTLP HTTP | `localhost:4318` | OpenTelemetry Collector receiver; apps use `/v1/traces`. |
+
+The provisioned **E-commerce Services Overview** dashboard is available at
+`http://localhost:3001/d/ecom-services-overview/e-commerce-services-overview`.
+It shows Prometheus target health, successful order/user/login/registration
+request counts, HTTP request flows and errors, Kafka producer/consumer activity,
+and recent Loki logs. Use **Explore traces in Tempo** in the dashboard header
+to search distributed traces across HTTP and Kafka. Business counts are
+successful requests observed by the gateway over the selected time range; they
+are not lifetime database totals. Kafka activity panels require the services to
+be running with Spring Kafka observations enabled.
+
+All observability host ports are bound to loopback. Prometheus scrapes the
+published host ports via `host.docker.internal`, so it works whether Spring
+services are started from the IDE on the host or as Compose containers.
+Alloy's HTTP server listens on port `12345` inside the Compose network only; it
+is not published to the host.
+
+Prometheus scrapes `/actuator/prometheus` from all Spring services over the
+Compose network. The endpoint is permitted without a user token for scraping;
+other actuator authorization remains unchanged. Logs are read from the shared
+`./logs` directory and pushed to Loki. Grafana's initial local-development login
+defaults to `admin` / `admin`; set `GRAFANA_ADMIN_USER` and
+`GRAFANA_ADMIN_PASSWORD` before starting the stack. The Grafana port is
+loopback-only; do not expose this default setup to an untrusted network.
+Prometheus retains seven days of metrics, Loki seven days of logs, and Tempo
+three days of traces. Data persists in named Docker volumes.
 
 Product variant stock is synchronized between Product Service and Inventory
 Service through Kafka. Product stock edits and imports publish catalog stock

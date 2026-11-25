@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.Builder;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,8 +19,10 @@ public class ProductCatalogClient {
     private static final Logger log = LoggerFactory.getLogger(ProductCatalogClient.class);
     private final RestClient restClient;
 
-    public ProductCatalogClient(@Value("${app.product-service.url:http://localhost:8091}") String baseUrl) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+    public ProductCatalogClient(
+            @Value("${app.product-service.url:http://localhost:8091}") String baseUrl,
+            Builder restClientBuilder) {
+        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
     }
 
     public ProductSnapshot getItem(String productId, String variantId) {

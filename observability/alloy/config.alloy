@@ -1,0 +1,40 @@
+local.file_match "ecom_logs" {
+	path_targets = [
+		{
+			"__path__" = "/var/log/ecom/*.log",
+			"job"      = "ecom-services",
+		},
+	]
+}
+
+loki.process "ecom_logs" {
+	forward_to = [loki.write.local.receiver]
+
+	stage.regex {
+		expression = `\[(?P<service>[^,\]]+),(?P<trace_id>[a-fA-F0-9]{32})?,(?P<span_id>[a-fA-F0-9]{16})?,`
+	}
+
+	stage.labels {
+		values = {
+			service = "",
+		}
+	}
+
+	stage.structured_metadata {
+		values = {
+			trace_id = "",
+			span_id  = "",
+		}
+	}
+}
+
+loki.source.file "ecom_logs" {
+	targets    = local.file_match.ecom_logs.targets
+	forward_to = [loki.process.ecom_logs.receiver]
+}
+
+loki.write "local" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+}

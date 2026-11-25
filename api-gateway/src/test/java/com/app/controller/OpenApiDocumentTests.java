@@ -17,6 +17,8 @@ class OpenApiDocumentTests {
             Map<String, Object> document = new Yaml().load(input);
             assertTrue(document.containsKey("openapi"));
             Map<String, Map<String, Object>> paths = (Map<String, Map<String, Object>>) document.get("paths");
+            assertTrue(paths.containsKey("/actuator/prometheus"),
+                    "Gateway metrics endpoint must be documented");
             assertTrue(paths.containsKey("/api/products"));
             Map<String, Object> productSearch = (Map<String, Object>) paths.get("/api/products").get("get");
             List<Map<String, Object>> productParameters = (List<Map<String, Object>>) productSearch.get("parameters");

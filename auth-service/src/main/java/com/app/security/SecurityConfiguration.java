@@ -64,6 +64,7 @@ public class SecurityConfiguration {
                 .requestMatchers(HttpMethod.GET, "/api/users/*").authenticated()
                 .requestMatchers("/api/users/**").denyAll()
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/prometheus").permitAll()
                 .requestMatchers("/actuator/**").hasRole("admin")
                 .anyRequest().permitAll())
             .oauth2ResourceServer(resourceServer -> resourceServer

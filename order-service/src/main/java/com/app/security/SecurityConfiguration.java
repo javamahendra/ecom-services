@@ -35,6 +35,7 @@ public class SecurityConfiguration {
         });
         http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(a -> a.requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(r -> r.jwt(j -> j.jwtAuthenticationConverter(converter))
                         .authenticationEntryPoint((req, res, ex) -> {

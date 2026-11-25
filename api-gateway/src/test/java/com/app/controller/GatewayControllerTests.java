@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -71,7 +72,7 @@ class GatewayControllerTests {
         String baseUrl = "http://127.0.0.1:" + upstream.getAddress().getPort();
         ObjectMapper objectMapper = JsonMapper.builder().build();
         GatewayController gateway = new GatewayController(baseUrl, baseUrl, baseUrl, baseUrl,
-                baseUrl, baseUrl, baseUrl, baseUrl, objectMapper);
+                baseUrl, baseUrl, baseUrl, baseUrl, RestClient.builder(), objectMapper);
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
         request.setRequestURI("/api/products/123");

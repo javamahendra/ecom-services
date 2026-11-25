@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.Builder;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,8 +33,9 @@ public class AuthService {
             @Value("${keycloak.token-uri}") String tokenUri,
             @Value("${keycloak.issuer-uri}") String issuerUri,
             @Value("${keycloak.auth-client-id:${keycloak.client-id}}") String clientId,
-            @Value("${keycloak.auth-client-secret:${keycloak.client-secret:}}") String clientSecret) {
-        this.restClient = RestClient.builder().build();
+            @Value("${keycloak.auth-client-secret:${keycloak.client-secret:}}") String clientSecret,
+            Builder restClientBuilder) {
+        this.restClient = restClientBuilder.build();
         this.tokenUri = tokenUri;
         this.logoutUri = issuerUri.replaceAll("/+$", "") + "/protocol/openid-connect/logout";
         this.clientId = clientId;

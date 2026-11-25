@@ -35,6 +35,7 @@ public class SecurityConfiguration {
         });
         http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(a -> a.requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/dispatches/*/status").hasAnyRole("admin", "manager")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(r -> r.jwt(j -> j.jwtAuthenticationConverter(converter))

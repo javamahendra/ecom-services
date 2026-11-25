@@ -21,6 +21,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.core.io.ClassPathResource;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.Builder;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -43,10 +44,11 @@ public class NotificationService {
     private final String smsToken;
     private final ZoneId deliveryZone;
     private final int deliveryBatchSize;
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
 
     public NotificationService(MongoTemplate mongo, NotificationRepository notifications,
                                NotificationTemplateCatalog templates,
+                               Builder restClientBuilder,
                                @Value("${notification.email.from:no-reply@example.com}") String mailFrom,
                                @Value("${notification.email.host:}") String mailHost,
                                @Value("${notification.email.port:587}") int mailPort,
@@ -60,6 +62,7 @@ public class NotificationService {
         this.mongo = mongo;
         this.notifications = notifications;
         this.templates = templates;
+        this.restClient = restClientBuilder.build();
         this.mailFrom = mailFrom;
         this.mailSender = createMailSender(mailHost, mailPort, mailUsername, mailPassword, mailStartTls);
         this.smsUrl = smsUrl;

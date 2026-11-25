@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.Builder;
 import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -31,7 +32,7 @@ public class GatewayController {
             "te", "trailer", "transfer-encoding", "upgrade", "host", "content-length");
     private static final Set<String> KEYCLOAK_PATHS = Set.of("/robots.txt");
 
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final Map<String, String> destinations;
 
@@ -44,7 +45,9 @@ public class GatewayController {
             @Value("${gateway.routes.dispatch}") String dispatch,
             @Value("${gateway.routes.cart}") String cart,
             @Value("${gateway.routes.keycloak}") String keycloak,
+            Builder restClientBuilder,
             ObjectMapper objectMapper) {
+        this.restClient = restClientBuilder.build();
         this.objectMapper = objectMapper;
         this.destinations = Map.of("auth", stripTrailingSlash(auth),
                 "product", stripTrailingSlash(product), "order", stripTrailingSlash(order),
