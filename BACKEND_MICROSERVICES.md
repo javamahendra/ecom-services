@@ -86,6 +86,12 @@ names and container ports instead of `localhost`.
 
 For an end-to-end explanation of logs, metrics, traces, dashboard authoring,
 and verification steps, see [OBSERVABILITY.md](OBSERVABILITY.md).
+The provisioned **JVM & Service Runtime** dashboard is at
+`http://localhost:3001/d/jvm-service-runtime/jvm-service-runtime`.
+Infrastructure dashboards are available at
+`http://localhost:3001/d/docker-containers/docker-containers` (Docker),
+`http://localhost:3001/d/mysql-server/mysql-server` (MySQL), and
+`http://localhost:3001/d/mongodb-server/mongodb-server` (MongoDB).
 
 The Compose stack includes Prometheus for service metrics, Grafana Alloy for
 shipping the existing service log files to Loki, OpenTelemetry Collector for

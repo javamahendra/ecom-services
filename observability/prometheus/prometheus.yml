@@ -35,3 +35,63 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8097"]
+  - job_name: docker
+    static_configs:
+      - targets: ["docker-exporter:9400"]
+  - job_name: mysql
+    static_configs:
+      - targets: ["mysql-exporter:9104"]
+  - job_name: mongodb
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["http://host.docker.internal:8090/actuator/health"]
+        labels:
+          service: api-gateway
+      - targets: ["http://host.docker.internal:8091/actuator/health"]
+        labels:
+          service: auth-service
+      - targets: ["http://host.docker.internal:8092/actuator/health"]
+        labels:
+          service: cart-service
+      - targets: ["http://host.docker.internal:8093/actuator/health"]
+        labels:
+          service: dispatch-service
+      - targets: ["http://host.docker.internal:8094/actuator/health"]
+        labels:
+          service: inventory-service
+      - targets: ["http://host.docker.internal:8095/actuator/health"]
+        labels:
+          service: notification-service
+      - targets: ["http://host.docker.internal:8096/actuator/health"]
+        labels:
+          service: order-service
+      - targets: ["http://host.docker.internal:8097/actuator/health"]
+        labels:
+          service: product-service
+      - targets: ["http://grafana:3000/api/health"]
+        labels:
+          service: grafana
+      - targets: ["http://prometheus:9090/-/healthy"]
+        labels:
+          service: prometheus
+      - targets: ["http://loki:3100/ready"]
+        labels:
+          service: loki
+      - targets: ["http://tempo:3200/ready"]
+        labels:
+          service: tempo
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+  - job_name: kafka
+    static_configs:
+      - targets: ["kafka-exporter:9308"]

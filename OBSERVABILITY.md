@@ -15,12 +15,37 @@ Spring services
                                                                              Grafana
 ```
 
+For infrastructure dashboards, confirm `docker-exporter`, `mysql-exporter`,
+`mongodb-exporter`, `blackbox-exporter`, and `kafka-exporter` are running and
+their Prometheus targets are UP.
+
 - **Grafana** is the UI for dashboards, Explore, and links between the three
   data sources. Grafana queries the data sources; it is not where raw
   application telemetry is collected.
 - **Prometheus** collects numeric time-series metrics by scraping each
   service's `/actuator/prometheus` endpoint every 15 seconds. Use it for rates,
-  totals, latency, errors, and service health.
+  totals, latency, errors, JVM health, and service health. HTTP server request
+  histogram buckets are enabled for p95 latency panels.
+- **Docker exporter** reads container state and statistics from the local Docker
+  Engine API and exposes container CPU, memory, network, restart, and writable
+  layer metrics to Prometheus. It needs access to `/var/run/docker.sock`; keep
+  it on the private Compose network and do not expose its port publicly.
+- **MySQL exporter** uses a dedicated read-only monitoring account to expose
+  MySQL server status and InnoDB metrics. Set `MYSQL_EXPORTER_PASSWORD` in the
+  ignored repository-root `.env` file to a strong local value; if unset, the
+  Compose development fallback reuses `MYSQL_PASSWORD` (or its existing
+  development default). The account has PROCESS, REPLICATION CLIENT, and
+  SELECT privileges and is created by the MySQL init script on a fresh
+  database volume.
+- **MongoDB exporter** collects server status and database statistics from the
+  local MongoDB instance, which currently has authentication disabled.
+- **Blackbox exporter** probes the eight application health endpoints and the
+  local Grafana, Prometheus, Loki, and Tempo readiness endpoints over HTTP.
+  Probes use `http_2xx`; an endpoint is UP only when it is reachable and returns
+  a successful status.
+- **Kafka exporter** reads broker, topic, partition, and consumer-group offset
+  data from the local Kafka broker. Consumer lag is only available for groups
+  that have committed offsets.
 - **Grafana Alloy** tails `logs/*.log`, extracts selected fields, and sends log
   entries to Loki. Logs include application messages and request-completion
   entries.
@@ -74,6 +99,54 @@ the corresponding service's `/actuator/health` and
 Open the provisioned **Service Logs** dashboard:
 
 <http://localhost:3001/d/request-service-flow/request-service-flow>
+
+The provisioned **JVM & Service Runtime** dashboard shows JVM uptime, heap
+utilization, non-heap memory, process and host CPU, live threads, average GC
+pause, HTTP request rate, and p95 request latency:
+
+<http://localhost:3001/d/jvm-service-runtime/jvm-service-runtime>
+
+Additional provisioned dashboards:
+
+- **HTTP Probe Overview** — endpoint availability, response codes, probe
+  duration, and DNS lookup timing:
+  <http://localhost:3001/d/http-probe-overview/http-probe-overview>
+- **Kafka Messaging** — broker count, topics, partitions, consumer groups,
+  offsets, and consumer lag:
+  <http://localhost:3001/d/kafka-messaging/kafka-messaging>
+- **Docker Containers** — container availability, CPU, memory, network,
+  restarts, and writable-layer usage:
+  <http://localhost:3001/d/docker-containers/docker-containers>
+- **MySQL Server** — exporter health, connections, queries, InnoDB buffer
+  pool, and threads:
+  <http://localhost:3001/d/mysql-server/mysql-server>
+- **MongoDB Server** — exporter health, connections, operation throughput,
+  memory, network, and database storage:
+  <http://localhost:3001/d/mongodb-server/mongodb-server>
+
+The Docker dashboard uses a small repository-maintained exporter because
+cAdvisor sees only the Docker Desktop VM host filesystem in this Windows
+development environment, not individual Compose containers.
+
+The HTTP probe dashboard uses the same endpoint-health concept as a Blackbox
+Exporter overview; it probes local services rather than public internet URLs.
+The messaging dashboard is for this repository's Kafka broker. It provides
+Kafka equivalents for broker, topic, and consumer health; it is not a
+RabbitMQ-specific dashboard.
+
+Select one service or all services with the **Service** variable. HTTP latency
+histograms are enabled by `management.metrics.distribution.percentiles-histogram.http.server.requests`
+and become available after each application is restarted. Prometheus exemplar
+storage and Grafana's trace destination are configured so exemplar trace IDs
+can link to Tempo when the instrumentation emits exemplars. The current
+Windows-hosted JVM metrics do not expose process open-file counts.
+
+The Prometheus container must be recreated (not just restarted) after changing
+its Compose command flags:
+
+```powershell
+docker compose up -d --force-recreate prometheus
+```
 
 Set a time range that includes the request. Use the filters as follows:
 
@@ -267,6 +340,9 @@ Test a dashboard's entire path, not only whether the JSON parses:
 | Purpose | Repository configuration |
 | --- | --- |
 | Prometheus targets and scrape interval | `observability/prometheus/prometheus.yml` |
+| Docker, MySQL, and MongoDB metrics exporters | `docker-compose.yaml` |
+| Docker Engine API metrics endpoint | `observability/docker-exporter/` |
+| MySQL monitoring account bootstrap | `mysql/init/02-prometheus-user.sh` |
 | Log collection, labels, and structured metadata | `observability/alloy/config.alloy` |
 | Loki storage and seven-day log retention | `observability/loki/loki.yml` |
 | OTLP receive and export traces to Tempo | `observability/otel/collector.yml` |

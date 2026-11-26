@@ -13,12 +13,74 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=7d
+      - --enable-feature=exemplar-storage
       - --web.enable-lifecycle
     ports:
       - "127.0.0.1:9090:9090"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    networks:
+      - ecom_service-net
+
+  docker-exporter:
+    build:
+      context: ./observability/docker-exporter
+    container_name: ecom-docker-exporter
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ecom_service-net
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:v0.17.2
+    container_name: ecom-mysql-exporter
+    restart: unless-stopped
+    command:
+      - --mysqld.address=mysql:3306
+      - --mysqld.username=prometheus
+    environment:
+      MYSQLD_EXPORTER_PASSWORD: ${MYSQL_EXPORTER_PASSWORD:-${MYSQL_PASSWORD:-root}}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ecom_service-net
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.43.1
+    container_name: ecom-mongodb-exporter
+    restart: unless-stopped
+    command:
+      - --mongodb.uri=mongodb://mongodb:27017
+      - --collect-all
+    depends_on:
+      - mongodb
+    networks:
+      - ecom_service-net
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.27.0
+    container_name: ecom-blackbox-exporter
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - ./observability/blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ecom_service-net
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.9.0
+    container_name: ecom-kafka-exporter
+    restart: unless-stopped
+    command:
+      - --kafka.server=kafka:19092
+    depends_on:
+      - kafka
     networks:
       - ecom_service-net
 
@@ -157,6 +219,7 @@ services:
       MYSQL_DATABASE: auth_service
       MYSQL_USER: auth_service
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_EXPORTER_PASSWORD: ${MYSQL_EXPORTER_PASSWORD:-${MYSQL_PASSWORD:-root}}
     ports:
       - "3306:3306"
     volumes:

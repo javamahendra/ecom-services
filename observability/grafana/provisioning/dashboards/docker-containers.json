@@ -1,0 +1,388 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Docker container health, CPU, memory, network, restarts, and writable-layer usage.",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Running containers for the selected Compose services.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(docker_container_state{service=~\"$service\",state=\"running\"}) or vector(0)",
+          "legendFormat": "Containers",
+          "refId": "A"
+        }
+      ],
+      "title": "Running containers",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "CPU consumed by each selected Compose service, expressed as percent of one CPU core.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "CPU",
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "100 * sum by (service) (docker_container_cpu_cores{service=~\"$service\"})",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container CPU by service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Current container working-set memory, grouped by Compose service.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Memory",
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (docker_container_memory_working_set_bytes{service=~\"$service\"})",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container memory by service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Container network receive and transmit throughput by service.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Bytes / second",
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (rate(docker_container_network_receive_bytes_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}} received",
+          "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (rate(docker_container_network_transmit_bytes_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}} sent",
+          "refId": "B"
+        }
+      ],
+      "title": "Container network throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Cumulative Docker container restart counts by Compose service.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Restarts",
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service, name) (docker_container_restarts_total{service=~\"$service\"})",
+          "legendFormat": "{{service}} / {{name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container restarts",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Bytes used by files created or changed in each container's writable layer.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Bytes",
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (docker_container_writable_layer_bytes{service=~\"$service\"})",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Writable layer usage",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "tags": [
+    "docker",
+    "containers",
+    "infrastructure"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(docker_container_state, service)",
+        "includeAll": true,
+        "allValue": ".+",
+        "label": "Compose service",
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": {
+          "query": "label_values(docker_container_state, service)",
+          "refId": "Prometheus-service-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Docker Containers",
+  "uid": "docker-containers",
+  "version": 1,
+  "weekStart": ""
+}
