@@ -51,7 +51,7 @@ export default function LoginPage() {
         name: claims.name || claims.preferred_username || (username.includes("@") ? username.split("@")[0] : username),
       }));
       toast.success("Welcome back.");
-      const defaultRoute = roles.includes("admin") ? "/admin" : roles.includes("manager") ? "/manager" : "/account";
+      const defaultRoute = roles.includes("admin") ? "/admin" : roles.includes("manager") ? "/manager" : "/";
       navigate(location.state?.from || defaultRoute, { replace: true });
     } catch (error) {
       toast.error(error.message || "Unable to sign in. Please try again.");

@@ -9,8 +9,7 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-        "spring.kafka.listener.auto-startup=false",
-        "eureka.client.enabled=false"
+        "spring.kafka.listener.auto-startup=false"
 })
 class KafkaListenerConfigurationTests {
     @Autowired

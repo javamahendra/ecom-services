@@ -14,9 +14,15 @@ loki.process "ecom_logs" {
 		expression = `\[(?P<service>[^,\]]+),(?P<trace_id>[a-fA-F0-9]{32})?,(?P<span_id>[a-fA-F0-9]{16})?,`
 	}
 
+	stage.regex {
+		expression = `(?:Gateway|HTTP) request completed: method=(?P<method>[A-Z]+), path=[^,]+, status=(?P<status>[0-9]{3})`
+	}
+
 	stage.labels {
 		values = {
 			service = "",
+			method  = "",
+			status  = "",
 		}
 	}
 

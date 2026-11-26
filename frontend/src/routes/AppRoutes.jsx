@@ -27,7 +27,7 @@ export default function AppRoutes() {
       <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/account" element={<RequireAuth><PanelLayout panel="user" /></RequireAuth>}>
+      <Route path="/account" element={<RequireAuth deniedRoles={["admin", "manager"]}><PanelLayout panel="user" /></RequireAuth>}>
         <Route index element={<AccountOverview />} />
         <Route path="orders" element={<AccountOverview ordersOnly />} />
         <Route path="orders/:orderId" element={<OrderDetailsPage />} />

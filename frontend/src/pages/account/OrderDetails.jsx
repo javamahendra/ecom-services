@@ -8,6 +8,7 @@ import { getProduct } from "../../services/productService";
 import { getOrder } from "../../services/orderService";
 import { productImage } from "../../components/ProductCard";
 import LoadingState from "../../components/LoadingState";
+import { isOrderProcessing, orderStatusLabel } from "../../utils/orderStatus";
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : "—";
@@ -63,6 +64,28 @@ export default function OrderDetailsPage() {
     return () => { active = false; };
   }, [orderId, token]);
 
+  useEffect(() => {
+    if (!order || !isOrderProcessing(order.status)) return undefined;
+    let active = true;
+    let hasReportedError = false;
+    const timer = window.setInterval(() => {
+      getOrder(orderId, token)
+        .then((result) => {
+          if (active) setOrder(result);
+        })
+        .catch((error) => {
+          if (active && !hasReportedError) {
+            hasReportedError = true;
+            toast.error(error.message || "Could not refresh order status.");
+          }
+        });
+    }, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [order, orderId, token]);
+
   if (loading) return <LoadingState label="Loading order details…" />;
 
   if (!order) {
@@ -86,8 +109,18 @@ export default function OrderDetailsPage() {
           <h1 className="mt-2 text-3xl font-normal tracking-[-0.04em] text-[#29382d]">Order #{order.id?.slice(-8)}</h1>
           <p className="mt-2 text-xs text-[#858a80]">Placed {formatDate(order.createdAt)}</p>
         </div>
-        <span className="rounded-full bg-[#e9ece5] px-3 py-1.5 text-xs font-medium text-[#52644f]">{order.status || "Processing"}</span>
+        <span className="rounded-full bg-[#e9ece5] px-3 py-1.5 text-xs font-medium text-[#52644f]">{orderStatusLabel(order.status)}</span>
       </div>
+      {order.status === "PENDING_INVENTORY" && (
+        <p className="mt-4 border border-[#e4e6de] bg-[#fbfbf8] px-4 py-3 text-xs leading-5 text-[#687064]">
+          Your order is placed. Inventory is being checked automatically; this status will update when the check completes.
+        </p>
+      )}
+      {order.status === "CANCELLATION_PENDING" && (
+        <p className="mt-4 border border-[#e4e6de] bg-[#fbfbf8] px-4 py-3 text-xs leading-5 text-[#687064]">
+          Your cancellation is being processed and this status will update automatically.
+        </p>
+      )}
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_300px]">
         <section>
@@ -96,9 +129,9 @@ export default function OrderDetailsPage() {
             {items.map((item, index) => (
               <div key={`${item.productId}-${item.variantId}-${index}`} className="flex flex-wrap items-start justify-between gap-4 border-b border-[#eef0ea] p-4 last:border-0">
                 <OrderItemDetails item={item} />
-                <div className="text-right text-sm text-[#586257]">
-                  <p>${Number(item.unitPrice || 0).toFixed(2)} each</p>
-                  <p className="mt-1 font-medium text-[#354237]">${(Number(item.unitPrice || 0) * item.quantity).toFixed(2)}</p>
+                <div className="min-w-36 text-sm text-[#586257] sm:text-right">
+                  <p>Unit price: ${Number(item.unitPrice || 0).toFixed(2)}</p>
+                  <p className="mt-1 font-medium text-[#354237]">Line total: ${(Number(item.unitPrice || 0) * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
             ))}
@@ -113,8 +146,12 @@ export default function OrderDetailsPage() {
               <div className="mt-3 text-xs leading-5 text-[#687064]">
                 <p className="font-medium text-[#354237]">{address.recipientName}</p>
                 <p>{address.phone}</p>
-                <p className="mt-2">{address.line1}{address.line2 ? `, ${address.line2}` : ""}</p>
-                <p>{address.city}, {address.region} {address.postalCode}</p>
+                <p className="mt-2">{[address.line1, address.line2, address.city]
+                  .filter((part, index, parts) => part && parts.findIndex(
+                    (candidate) => candidate?.trim().toLowerCase() === part.trim().toLowerCase(),
+                  ) === index)
+                  .join(", ")}</p>
+                <p>{address.region} {address.postalCode}</p>
                 <p>{address.country}</p>
               </div>
             ) : <p className="mt-3 text-xs text-[#858a80]">No address details available.</p>}

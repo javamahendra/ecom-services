@@ -1,0 +1,294 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Search logs by trace ID, span ID, order ID, user ID, or any text, then follow matching events across services.",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "title": "Explore all logs",
+      "type": "link",
+      "url": "/explore?left=%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bservice%3D~%5C%22.%2B%5C%22%7D%22%2C%22refId%22%3A%22A%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-1h%22%2C%22to%22%3A%22now%22%7D%7D"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Matching logs from all selected services. Add any combination of IDs or text; results are shown oldest first to follow the flow.",
+      "gridPos": {
+        "h": 18,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Ascending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{service=~\"$service\"} |= \"$traceId\" |= \"$spanId\" |= \"$orderId\" |= \"$userId\" |~ \"(?i)$level\" |= \"$search\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Matching logs across services (oldest first)",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Log volume across the selected time range, split by service.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Log lines",
+            "axisPlacement": "auto",
+            "drawStyle": "bars",
+            "fillOpacity": 55,
+            "gradientMode": "opacity",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "stacking": {
+              "group": "services",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum by (service) (count_over_time({service=~\"$service\"} |= \"$traceId\" |= \"$spanId\" |= \"$orderId\" |= \"$userId\" |~ \"(?i)$level\" |= \"$search\" [$__interval]))",
+          "legendFormat": "{{service}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Log activity by service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "text",
+        "uid": "-- Grafana --"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 3,
+      "options": {
+        "content": "Use any combination of **Trace ID**, **Span ID**, **Order ID**, **User ID**, and **Search**. Search matches log text, so an ID can also be pasted into Search. Set the time range to cover the request; matching events are listed oldest first across services. Expand a trace-bearing row and choose **View trace** to open its waterfall in Tempo.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.5.2",
+      "title": "Find a request",
+      "type": "text"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 40,
+  "tags": [
+    "ecommerce",
+    "logs",
+    "tracing"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "label": "Trace ID",
+        "name": "traceId",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "label": "Span ID",
+        "name": "spanId",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "label": "Order ID",
+        "name": "orderId",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "label": "User ID",
+        "name": "userId",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "definition": "label_values(service)",
+        "includeAll": true,
+        "allValue": ".+",
+        "label": "Service",
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": {
+          "query": "label_values(service)",
+          "refId": "Loki-service-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "Level",
+        "multi": false,
+        "name": "level",
+        "options": [],
+        "query": "ERROR,WARN,INFO,DEBUG,TRACE",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "label": "Search",
+        "name": "search",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Service Logs",
+  "uid": "request-service-flow",
+  "version": 4,
+  "weekStart": ""
+}

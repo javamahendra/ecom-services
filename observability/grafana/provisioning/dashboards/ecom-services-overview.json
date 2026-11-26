@@ -107,7 +107,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "up{job=~\"$job\",instance=~\"host.docker.internal:.*\"}",
+          "expr": "up{job=~\"$job\",job!=\"eureka-server\",instance=~\"host.docker.internal:.*\"}",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -120,7 +120,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Count of successful order-create HTTP requests seen by the gateway. This counts successful requests, not necessarily distinct paid orders.",
+      "description": "Successful order-create requests counted since the API gateway last started. This counts requests, not necessarily distinct paid orders.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -157,7 +157,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_count{job=\"api-gateway\",uri=\"/api/orders\",method=\"POST\",status=~\"2..\"}[$__range]))",
+          "expr": "sum(ecommerce_business_requests_total{job=\"api-gateway\",operation=\"order_create\",status=~\"2..\"}) or vector(0)",
           "legendFormat": "Successful order creates",
           "refId": "A"
         }
@@ -170,7 +170,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Successful self-registration and admin user-creation requests observed at the gateway.",
+      "description": "Successful self-registration and admin user-creation requests counted since the API gateway last started.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -207,7 +207,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_count{job=\"api-gateway\",uri=~\"/api/users(/admin)?\",method=\"POST\",status=~\"2..\"}[$__range]))",
+          "expr": "sum(ecommerce_business_requests_total{job=\"api-gateway\",operation=~\"user_registration|admin_user_create\",status=~\"2..\"}) or vector(0)",
           "legendFormat": "Successful user creates",
           "refId": "A"
         }
@@ -220,7 +220,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Successful login requests at the gateway. Failed attempts return non-2xx and are shown in the HTTP error panel.",
+      "description": "Successful login requests counted since the API gateway last started. Failed attempts return non-2xx and are shown in the HTTP error panel.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -257,7 +257,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_count{job=\"api-gateway\",uri=\"/api/auth/login\",method=\"POST\",status=~\"2..\"}[$__range]))",
+          "expr": "sum(ecommerce_business_requests_total{job=\"api-gateway\",operation=\"login\",status=~\"2..\"}) or vector(0)",
           "legendFormat": "Successful logins",
           "refId": "A"
         }
@@ -270,7 +270,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Registration requests that completed with a successful HTTP response.",
+      "description": "Self-registration requests counted since the API gateway last started.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -307,7 +307,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_count{job=\"api-gateway\",uri=\"/api/users\",method=\"POST\",status=~\"2..\"}[$__range]))",
+          "expr": "sum(ecommerce_business_requests_total{job=\"api-gateway\",operation=\"user_registration\",status=~\"2..\"}) or vector(0)",
           "legendFormat": "Self registrations",
           "refId": "A"
         }
@@ -461,12 +461,12 @@
         "type": "loki",
         "uid": "loki"
       },
-      "description": "Recent logs from all services. Use trace IDs in the log line to correlate with Tempo traces.",
+      "description": "Search log text and filter by service, level, HTTP method, or response status. Trace IDs can be used to correlate with Tempo.",
       "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 29
       },
       "id": 9,
       "options": {
@@ -487,7 +487,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{service=~\".+\"}",
+          "expr": "{service=~\"$logService\",method=~\"$httpMethod\",status=~\"$httpStatus\"} |~ \"(?i)$level\" |= \"$logSearch\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -569,19 +569,101 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(up, job)",
+        "definition": "label_values(up{job!=\"eureka-server\"}, job)",
         "includeAll": true,
         "label": "Service",
         "multi": true,
         "name": "job",
         "options": [],
         "query": {
-          "query": "label_values(up, job)",
+          "query": "label_values(up{job!=\"eureka-server\"}, job)",
           "refId": "Prometheus-job-Variable-Query"
         },
         "refresh": 1,
         "regex": "",
         "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "definition": "label_values(service)",
+        "allValue": ".+",
+        "includeAll": true,
+        "label": "Log service",
+        "multi": true,
+        "name": "logService",
+        "options": [],
+        "query": {
+          "query": "label_values(service)",
+          "refId": "Loki-service-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "Log level",
+        "multi": true,
+        "name": "level",
+        "options": [],
+        "query": "ERROR,WARN,INFO,DEBUG,TRACE",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "label": "Search text",
+        "name": "logSearch",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "label": "HTTP method",
+        "multi": true,
+        "name": "httpMethod",
+        "options": [],
+        "query": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "label": "HTTP status",
+        "multi": true,
+        "name": "httpStatus",
+        "options": [],
+        "query": "200,201,202,204,400,401,403,404,409,422,429,500,502,503",
+        "type": "custom"
       }
     ]
   },

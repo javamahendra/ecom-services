@@ -1,6 +1,6 @@
 x-otel-environment: &otel-environment
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
-  OTEL_TRACES_SAMPLER_ARG: "0.1"
+  OTEL_TRACES_SAMPLER_ARG: "1.0"
 
 services:
   prometheus:
@@ -94,20 +94,6 @@ services:
       - prometheus
       - loki
       - tempo
-    networks:
-      - ecom_service-net
-
-  eureka-server:
-    build:
-      context: ./eureka-server
-    container_name: eureka-server
-    restart: unless-stopped
-    environment:
-      <<: *otel-environment
-    ports:
-      - "8761:8761"
-    volumes:
-      - ./logs:/app/logs
     networks:
       - ecom_service-net
 
@@ -214,8 +200,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MYSQL_URL: jdbc:mysql://mysql:3306/auth_service
       MYSQL_USER: auth_service
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
@@ -232,8 +216,6 @@ services:
     volumes:
       - ./logs:/app/logs
     depends_on:
-      eureka-server:
-        condition: service_started
       mysql:
         condition: service_healthy
       keycloak:
@@ -250,8 +232,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       AUTH_SERVICE_URL: http://auth-service:8091
       PRODUCT_SERVICE_URL: http://product-service:8097
       ORDER_SERVICE_URL: http://order-service:8096
@@ -265,7 +245,6 @@ services:
     volumes:
       - ./logs:/app/logs
     depends_on:
-      - eureka-server
       - auth-service
       - product-service
       - order-service
@@ -284,8 +263,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/product_service
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
@@ -299,7 +276,6 @@ services:
       - mongodb
       - kafka
       - keycloak
-      - eureka-server
     networks:
       - ecom_service-net
 
@@ -310,8 +286,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/order_service
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
@@ -325,7 +299,6 @@ services:
       - mongodb
       - kafka
       - keycloak
-      - eureka-server
     networks:
       - ecom_service-net
 
@@ -336,8 +309,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/inventory_service
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
@@ -351,7 +322,6 @@ services:
       - mongodb
       - kafka
       - keycloak
-      - eureka-server
     networks:
       - ecom_service-net
 
@@ -362,8 +332,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/notification_service
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
@@ -388,7 +356,6 @@ services:
       - mongodb
       - kafka
       - keycloak
-      - eureka-server
     networks:
       - ecom_service-net
 
@@ -399,8 +366,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/dispatch_service
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
@@ -414,7 +379,6 @@ services:
       - mongodb
       - kafka
       - keycloak
-      - eureka-server
     networks:
       - ecom_service-net
 
@@ -425,8 +389,6 @@ services:
     restart: unless-stopped
     environment:
       <<: *otel-environment
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_ENABLED: "true"
       MONGODB_URI: mongodb://mongodb:27017/cart_service
       PRODUCT_SERVICE_URL: http://product-service:8097
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/ecomservice
@@ -440,7 +402,6 @@ services:
       - mongodb
       - product-service
       - keycloak
-      - eureka-server
     networks:
       - ecom_service-net
 

@@ -11,6 +11,7 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,7 @@ public class GatewayController {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final Map<String, String> destinations;
+    private final MeterRegistry meterRegistry;
 
     public GatewayController(
             @Value("${gateway.routes.auth}") String auth,
@@ -46,9 +48,11 @@ public class GatewayController {
             @Value("${gateway.routes.cart}") String cart,
             @Value("${gateway.routes.keycloak}") String keycloak,
             Builder restClientBuilder,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            MeterRegistry meterRegistry) {
         this.restClient = restClientBuilder.build();
         this.objectMapper = objectMapper;
+        this.meterRegistry = meterRegistry;
         this.destinations = Map.of("auth", stripTrailingSlash(auth),
                 "product", stripTrailingSlash(product), "order", stripTrailingSlash(order),
                 "inventory", stripTrailingSlash(inventory), "notification", stripTrailingSlash(notification),
@@ -85,15 +89,37 @@ public class GatewayController {
                         upstream.getBody().transferTo(response.getOutputStream());
                         return null;
                     });
+            recordBusinessRequest(request, response.getStatus());
         } catch (IllegalArgumentException exception) {
             writeError(request, response, HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
                     "This HTTP method is not supported.");
+            recordBusinessRequest(request, response.getStatus());
         } catch (RestClientException exception) {
             log.error("Upstream service unavailable: service={}, path={}, requestId={}",
                     service, path, requestId(request), exception);
             writeError(request, response, HttpStatus.SERVICE_UNAVAILABLE, "UPSTREAM_UNAVAILABLE",
                     "The requested service is temporarily unavailable. Please try again later.");
+            recordBusinessRequest(request, response.getStatus());
         }
+    }
+
+    private void recordBusinessRequest(HttpServletRequest request, int status) {
+        String operation = businessOperation(request);
+        if (operation != null) {
+            meterRegistry.counter("ecommerce.business.requests",
+                    "operation", operation, "status", Integer.toString(status)).increment();
+        }
+    }
+
+    private static String businessOperation(HttpServletRequest request) {
+        if (!"POST".equals(request.getMethod())) return null;
+        return switch (request.getRequestURI()) {
+            case "/api/orders" -> "order_create";
+            case "/api/users" -> "user_registration";
+            case "/api/users/admin" -> "admin_user_create";
+            case "/api/auth/login" -> "login";
+            default -> null;
+        };
     }
 
     static String route(String path) {

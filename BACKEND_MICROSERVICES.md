@@ -19,15 +19,6 @@ flowchart LR
     Gateway --> Orders[Order service<br/>:8096]
     Gateway --> Products[Product service<br/>:8097]
 
-    Gateway -. service registration .-> Eureka[Eureka<br/>:8761]
-    Auth -. service registration .-> Eureka
-    Cart -. service registration .-> Eureka
-    Dispatch -. service registration .-> Eureka
-    Inventory -. service registration .-> Eureka
-    Notify -. service registration .-> Eureka
-    Orders -. service registration .-> Eureka
-    Products -. service registration .-> Eureka
-
     Auth --> Keycloak[Keycloak]
     Auth --> AuthDB[(MySQL<br/>auth_service)]
     Products --> ProductDB[(MongoDB<br/>product_service)]
@@ -42,9 +33,9 @@ flowchart LR
 
 The browser sends API requests to the gateway rather than choosing backend
 services itself. The gateway exposes the consolidated API documented in the
-gateway's OpenAPI page. Eureka keeps track of service instances. Kafka carries
-events for work that does not need to be completed as part of the original HTTP
-request.
+gateway's OpenAPI page and routes requests to services using configured URLs.
+Kafka carries events for work that does not need to be completed as part of the
+original HTTP request.
 
 ## Local URLs and ports
 
@@ -63,7 +54,6 @@ normally sends API requests through the gateway.
 | Notification Service | `http://localhost:8095` | 8095 |
 | Order Service | `http://localhost:8096` | 8096 |
 | Product Service | `http://localhost:8097` | 8097 |
-| Eureka | `http://localhost:8761` | 8761 |
 | Keycloak | `http://localhost:8081` | 8081 |
 | Kafka UI | `http://localhost:8085` | 8085 |
 | Kafka (host client connection) | `localhost:9092` | 9092 |
@@ -80,7 +70,6 @@ names and container ports instead of `localhost`.
 | Service | Purpose |
 | --- | --- |
 | **API Gateway** | Application entry point for backend HTTP APIs. Routes requests to the appropriate service and serves the consolidated API documentation. |
-| **Eureka Server** | Registry where backend services register so service instances can be located. |
 | **Auth Service** | Account and user APIs, including sign-in/token operations and user-profile management. Uses Keycloak for identity and MySQL for its configured auth-service database. |
 | **Product Service** | Product catalog APIs, including browsing and searching products. Uses the `product_service` MongoDB database. |
 | **Cart Service** | Cart APIs for the customer's selected products before checkout. |
@@ -95,15 +84,22 @@ names and container ports instead of `localhost`.
 
 ## Local observability
 
+For an end-to-end explanation of logs, metrics, traces, dashboard authoring,
+and verification steps, see [OBSERVABILITY.md](OBSERVABILITY.md).
+
 The Compose stack includes Prometheus for service metrics, Grafana Alloy for
 shipping the existing service log files to Loki, OpenTelemetry Collector for
 OTLP traces, Tempo for trace storage, and Grafana for exploring all three
-signals. The Spring services expose Micrometer Prometheus metrics, export
-sampled traces (10% by default) to the collector, and include trace/span IDs in
-their log pattern. Spring MVC server requests, injected `RestClient.Builder`
-calls, and Kafka producers/consumers are instrumented; trace context is
-propagated over HTTP and Kafka. No application request, database, or Kafka flow
-depends on the observability containers.
+signals. The Spring services expose Micrometer Prometheus metrics and use the
+Spring Boot OpenTelemetry starter to export traces to the collector. Local
+configuration samples every request by default so trace/span IDs appear in
+logs; override `OTEL_TRACES_SAMPLER_ARG` to reduce sampling when needed. Spring
+MVC server requests, injected `RestClient.Builder` calls, and Kafka
+producers/consumers are instrumented; trace context is propagated over HTTP and
+Kafka. OTLP metric export is disabled because Prometheus scrapes
+`/actuator/prometheus` and the Collector is configured for traces only. No
+application request, database, or Kafka flow depends on the observability
+containers.
 
 Start the stack with `docker compose up -d`. The interfaces and OTLP receiver
 are bound to loopback on the host:
@@ -229,6 +225,7 @@ sequenceDiagram
     participant Order as Order Service
     participant ODB as Order Database
     participant Bus as Kafka
+    participant Inventory as Inventory Service
     participant Dispatch as Dispatch Service
     participant DDB as Dispatch data
 
@@ -238,15 +235,25 @@ sequenceDiagram
     Order->>ODB: Persist order
     Order->>Bus: Publish OrderEvent
     Order-->>UI: Return order result
+    Bus-->>Inventory: Reserve requested stock
+    Inventory->>Bus: Publish inventory result
+    Bus-->>Order: Update order status
     Bus-->>Dispatch: Deliver OrderEvent
     Dispatch->>DDB: Create/update dispatch record
 ```
 
 **In plain language:** the Order Service is responsible for accepting and
-storing the order. It publishes an `OrderEvent`; the Dispatch Service receives
-that event and records dispatch work. A dispatch record is therefore produced
-asynchronously and may not be visible at the exact moment the checkout
-response is returned.
+storing the order. It initially reports `PENDING_INVENTORY` while the Inventory
+Service asynchronously reserves stock. The Order Service changes the status to
+`CONFIRMED`, `PARTIALLY_CONFIRMED`, or `REJECTED` when it receives the inventory
+result. The customer and staff order views refresh these in-progress statuses
+automatically. Dispatch records are also produced asynchronously and may not be
+visible at the exact moment the checkout response is returned.
+
+Admins and managers can request cancellation from order management while an
+order is pending, confirmed, partially confirmed, or rejected. Cancellation
+updates the order and dispatch status through Kafka and restores any stock
+reserved for that order.
 
 ### Orders containing unavailable items
 

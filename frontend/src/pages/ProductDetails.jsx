@@ -1,6 +1,6 @@
-import { ArrowLeft, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { normalizeProduct } from "../api";
@@ -16,6 +16,7 @@ export default function ProductDetails() {
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const cart = useSelector((state) => state.cart);
 
   const variants = product
@@ -68,7 +69,7 @@ export default function ProductDetails() {
   const updateCartQuantity = (nextQuantity) => {
     if (nextQuantity > variantStockCount) {
       toast.info(variantStockCount === 0 ? "This color is out of stock." : `Only ${variantStockCount} available in this color.`);
-      return;
+      return false;
     }
     dispatch(setItemQuantity({
       id: cartItemId,
@@ -81,6 +82,17 @@ export default function ProductDetails() {
       quantity: nextQuantity,
     }));
     if (quantity === 0 && nextQuantity === 1) toast.success(`${product.name} added to your bag`);
+    return true;
+  };
+  const addToBag = () => {
+    if (quantity > 0) {
+      toast.info(`${product.name} is already in your bag`);
+      return;
+    }
+    updateCartQuantity(1);
+  };
+  const buyNow = () => {
+    if (updateCartQuantity(quantity || 1)) navigate("/checkout");
   };
 
   return (
@@ -162,6 +174,24 @@ export default function ProductDetails() {
             <span className="text-xs text-[#81877c]">
               {variantStockCount === 0 ? "Out of stock in this color" : quantity > 0 ? `${quantity} in your bag` : "Use + to add to your bag"}
             </span>
+          </div>
+          <div className="mt-6 flex max-w-sm flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={addToBag}
+              disabled={variantStockCount === 0}
+              className="flex h-12 flex-1 items-center justify-center gap-2 border border-[#314638] text-xs font-medium uppercase tracking-[0.12em] text-[#314638] transition hover:bg-[#eef0ea] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ShoppingBag size={15} /> Add to bag
+            </button>
+            <button
+              type="button"
+              onClick={buyNow}
+              disabled={variantStockCount === 0}
+              className="flex h-12 flex-1 items-center justify-center gap-2 bg-[#314638] text-xs font-medium uppercase tracking-[0.12em] text-white transition hover:bg-[#25372b] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Buy now <ArrowRight size={14} />
+            </button>
           </div>
           <div className="mt-8 border-t border-[#e3e5dd] pt-5 text-xs leading-6 text-[#81877c]">Thoughtfully selected. Made for everyday living.<br />Free shipping on orders over $100.</div>
         </div>

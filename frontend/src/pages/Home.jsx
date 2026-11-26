@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowLeft, ArrowRight, Leaf, PackageCheck, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, Leaf, PackageCheck, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -97,6 +97,8 @@ export default function Home() {
   const location = useLocation();
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState("All");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
@@ -124,6 +126,7 @@ export default function Home() {
       direction: "desc",
     });
     if (category !== "All") params.set("category", category);
+    if (search) params.set("search", search);
 
     setLoading(true);
     getProducts(params)
@@ -138,9 +141,18 @@ export default function Home() {
       .catch(() => {
         if (!active) return;
         setUsingFallback(true);
-        const matchingProducts = category === "All"
-          ? fallbackProducts
-          : fallbackProducts.filter((product) => product.category === category);
+        const searchTerm = search.toLocaleLowerCase();
+        const matchingProducts = fallbackProducts.filter((product) => {
+          const matchesCategory = category === "All" || product.category === category;
+          const searchableText = [
+            product.name,
+            product.description,
+            product.category,
+            product.productType,
+            ...(product.variants || []).map((variant) => variant.color),
+          ].join(" ").toLocaleLowerCase();
+          return matchesCategory && (!searchTerm || searchableText.includes(searchTerm));
+        });
         const start = page * PAGE_SIZE;
         setProducts(matchingProducts.slice(start, start + PAGE_SIZE));
         setTotalElements(matchingProducts.length);
@@ -157,7 +169,7 @@ export default function Home() {
       active = false;
       window.clearTimeout(loadingTimer);
     };
-  }, [page, category]);
+  }, [page, category, search]);
 
   useEffect(() => {
     let active = true;
@@ -221,6 +233,18 @@ export default function Home() {
     setPage(0);
   };
 
+  const submitSearch = (event) => {
+    event.preventDefault();
+    setSearch(searchInput.trim());
+    setPage(0);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setSearch("");
+    setPage(0);
+  };
+
   return (
     <>
       <main>
@@ -249,6 +273,22 @@ export default function Home() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#788174]">The collection</p>
               <h2 className="mt-3 text-4xl font-normal tracking-[-0.045em] text-[#29382d] sm:text-5xl">Made to live with.</h2>
             </div>
+          </div>
+          <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <form onSubmit={submitSearch} role="search" className="flex w-full max-w-md gap-2">
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search products..."
+                aria-label="Search products"
+                className="h-10 min-w-0 flex-1 border border-[#dfe2d9] bg-white px-3 text-sm outline-none focus:border-[#71816d]"
+              />
+              <button type="submit" aria-label="Search products" className="grid h-10 w-10 shrink-0 place-items-center bg-[#314638] text-white transition hover:bg-[#25372b]">
+                <Search size={16} />
+              </button>
+              {search && <button type="button" onClick={clearSearch} className="h-10 border border-[#dfe2d9] px-3 text-xs text-[#52644f] hover:bg-white">Clear</button>}
+            </form>
             <div className="flex flex-wrap gap-2">
               {categories.map((item) => <button key={item} onClick={() => selectCategory(item)} className={`rounded-full border px-4 py-2 text-xs transition ${category === item ? "border-[#314638] bg-[#314638] text-white" : "border-[#dfe2d9] text-[#667064] hover:border-[#9da69a]"}`}>{item}</button>)}
             </div>

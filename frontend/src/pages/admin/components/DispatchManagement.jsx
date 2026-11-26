@@ -164,9 +164,41 @@ export function DispatchManagement({ readOnly = false }) {
                   <td className="px-4 py-3">
                     <details>
                       <summary className="cursor-pointer font-medium text-[#354237]">#{order.orderId.slice(-8)}</summary>
-                      <div className="mt-2 max-w-xs space-y-1 text-xs text-[#687064]">
-                        {(order.items || []).map((item, index) => <p key={`${item.productId}-${index}`}>{item.productName} × {item.quantity}</p>)}
-                        {order.shippingAddress && <p className="pt-1">{order.shippingAddress.line1}, {order.shippingAddress.city}, {order.shippingAddress.region} {order.shippingAddress.postalCode}</p>}
+                      <div className="mt-3 w-[min(760px,calc(100vw-3rem))] space-y-4">
+                        <div className="overflow-x-auto border border-[#e4e6de]">
+                          <table className="w-full min-w-[560px] text-left text-xs">
+                            <thead className="bg-[#fbfbf8] text-[#858a80]">
+                              <tr>
+                                <th className="px-3 py-2 font-medium">Item to dispatch</th>
+                                <th className="px-3 py-2 font-medium">Color / variant</th>
+                                <th className="px-3 py-2 text-right font-medium">Qty</th>
+                                <th className="px-3 py-2 text-right font-medium">Unit price</th>
+                                <th className="px-3 py-2 text-right font-medium">Line total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(order.items || []).map((item, index) => {
+                                const unitPrice = Number(item.unitPrice || 0);
+                                return (
+                                  <tr key={`${item.productId}-${index}`} className="border-t border-[#eef0ea]">
+                                    <td className="px-3 py-2.5 font-medium text-[#354237]">{item.productName}</td>
+                                    <td className="px-3 py-2.5 text-[#687064]">{item.color || "Standard"}</td>
+                                    <td className="px-3 py-2.5 text-right text-[#687064]">{item.quantity}</td>
+                                    <td className="px-3 py-2.5 text-right whitespace-nowrap text-[#687064]">${unitPrice.toFixed(2)}</td>
+                                    <td className="px-3 py-2.5 text-right whitespace-nowrap font-medium text-[#354237]">${(unitPrice * item.quantity).toFixed(2)}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        {order.shippingAddress && (
+                          <div className="text-xs leading-5 text-[#687064]">
+                            <p className="font-medium text-[#354237]">Delivery address</p>
+                            <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ""}</p>
+                            <p>{order.shippingAddress.city}, {order.shippingAddress.region} {order.shippingAddress.postalCode}</p>
+                          </div>
+                        )}
                       </div>
                     </details>
                   </td>

@@ -7,6 +7,7 @@ import { getUserProfile } from "../../services/userService";
 import { getOrders } from "../../services/orderService";
 import { getTokenClaims } from "../../auth/token";
 import LoadingState from "../../components/LoadingState";
+import { isOrderProcessing, orderStatusLabel } from "../../utils/orderStatus";
 
 export default function AccountOverview({ ordersOnly = false }) {
   const navigate = useNavigate();
@@ -51,6 +52,28 @@ export default function AccountOverview({ ordersOnly = false }) {
       window.clearTimeout(loadingTimer);
     };
   }, [ordersOnly, user.id, user.token, user.email]);
+
+  useEffect(() => {
+    if (!orders.some((order) => isOrderProcessing(order.status))) return undefined;
+    let active = true;
+    let hasReportedError = false;
+    const timer = window.setInterval(() => {
+      getOrders(0, 20, user.token)
+        .then((result) => {
+          if (active) setOrders(result?.content || []);
+        })
+        .catch((error) => {
+          if (active && !hasReportedError) {
+            hasReportedError = true;
+            toast.error(error.message || "Could not refresh order statuses.");
+          }
+        });
+    }, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [orders, user.token]);
 
   if (loading) return <LoadingState label={ordersOnly ? "Loading your orders…" : "Loading your account…"} />;
 
@@ -104,7 +127,7 @@ export default function AccountOverview({ ordersOnly = false }) {
                   >
                     <td className="px-4 py-3 font-medium text-[#354237]">#{order.id?.slice(-8)}</td>
                     <td className="px-4 py-3 text-[#687064]">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}</td>
-                    <td className="px-4 py-3 text-[#687064]">{order.status || "Processing"}</td>
+                    <td className="px-4 py-3 text-[#687064]">{orderStatusLabel(order.status)}</td>
                     <td className="px-4 py-3 text-right text-[#354237]">${Number(order.total || 0).toFixed(2)}</td>
                   </tr>
                 );

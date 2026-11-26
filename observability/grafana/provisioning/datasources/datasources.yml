@@ -14,6 +14,13 @@ datasources:
     access: proxy
     url: http://loki:3100
     editable: false
+    jsonData:
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '\[[^,\]]+,([a-fA-F0-9]{32}),'
+          name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: View trace
   - name: Tempo
     uid: tempo
     type: tempo

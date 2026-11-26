@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import LoadingState from "../../../components/LoadingState";
 import { cancelOrder, getOrderPage } from "../../../services/orderService";
+import { orderStatusLabel } from "../../../utils/orderStatus";
 
 const ORDER_PAGE_SIZE = 10;
 const CANCELLABLE_STATUSES = ["PENDING_INVENTORY", "CONFIRMED", "PARTIALLY_CONFIRMED", "REJECTED"];
@@ -78,7 +79,7 @@ export function OrderManagement() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-medium text-[#354237]">Order management</h2>
-          <p className="mt-1 text-xs text-[#858a80]">{total.toLocaleString()} orders · {ORDER_PAGE_SIZE} per page</p>
+          <p className="mt-1 text-xs text-[#858a80]">{total.toLocaleString()} orders · {ORDER_PAGE_SIZE} per page. Admins and managers can cancel pending, confirmed, partially confirmed, or rejected orders here.</p>
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           <form onSubmit={submitSearch} className="flex gap-2">
@@ -129,25 +130,73 @@ export function OrderManagement() {
                   <td className="px-4 py-3">
                     <details>
                       <summary className="cursor-pointer font-medium text-[#354237]">#{order.id.slice(-8)}</summary>
-                      <div className="mt-2 max-w-xs space-y-1 text-xs text-[#687064]">
-                        {(order.items || []).map((item, index) => {
-                          const itemResult = order.itemResults?.find((result) => result.itemIndex === index);
-                          return <p key={`${item.productId}-${index}`}>
-                            {item.productName} × {item.quantity}
-                            {itemResult && <span className={`ml-2 font-medium ${itemResult.status === "RESERVED" ? "text-emerald-700" : "text-red-700"}`}>
-                              {itemResult.status === "RESERVED" ? "In stock" : "Unavailable"}
-                            </span>}
-                            {itemResult?.message && itemResult.status !== "RESERVED" && <span className="block text-red-600">{itemResult.message}</span>}
-                          </p>;
-                        })}
-                        {order.shippingAddress && <p className="pt-1">{order.shippingAddress.line1}, {order.shippingAddress.city}, {order.shippingAddress.region} {order.shippingAddress.postalCode}</p>}
+                      <div className="mt-3 w-[min(760px,calc(100vw-3rem))] space-y-4">
+                        <div className="overflow-x-auto border border-[#e4e6de]">
+                          <table className="w-full min-w-[620px] text-left text-xs">
+                            <thead className="bg-[#fbfbf8] text-[#858a80]">
+                              <tr>
+                                <th className="px-3 py-2 font-medium">Ordered item</th>
+                                <th className="px-3 py-2 font-medium">Color / variant</th>
+                                <th className="px-3 py-2 text-right font-medium">Qty</th>
+                                <th className="px-3 py-2 text-right font-medium">Unit price</th>
+                                <th className="px-3 py-2 text-right font-medium">Line total</th>
+                                <th className="px-3 py-2 font-medium">Inventory</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(order.items || []).map((item, index) => {
+                                const itemResult = order.itemResults?.find((result) => result.itemIndex === index);
+                                const unitPrice = Number(item.unitPrice || 0);
+                                return (
+                                  <tr key={`${item.productId}-${index}`} className="border-t border-[#eef0ea]">
+                                    <td className="px-3 py-2.5 font-medium text-[#354237]">{item.productName}</td>
+                                    <td className="px-3 py-2.5 text-[#687064]">{item.color || "Standard"}</td>
+                                    <td className="px-3 py-2.5 text-right text-[#687064]">{item.quantity}</td>
+                                    <td className="px-3 py-2.5 text-right whitespace-nowrap text-[#687064]">${unitPrice.toFixed(2)}</td>
+                                    <td className="px-3 py-2.5 text-right whitespace-nowrap font-medium text-[#354237]">${(unitPrice * item.quantity).toFixed(2)}</td>
+                                    <td className="px-3 py-2.5">
+                                      {itemResult ? (
+                                        <span className={itemResult.status === "RESERVED" ? "text-emerald-700" : "text-red-700"}>
+                                          {itemResult.status === "RESERVED" ? "Reserved" : "Unavailable"}
+                                          {itemResult.message && itemResult.status !== "RESERVED" && <span className="block max-w-48 whitespace-normal">{itemResult.message}</span>}
+                                        </span>
+                                      ) : <span className="text-[#92978e]">Checking</span>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                            <tfoot className="border-t border-[#e4e6de] bg-[#fbfbf8]">
+                              <tr>
+                                <td colSpan="4" className="px-3 py-2 text-right font-medium text-[#687064]">Order total</td>
+                                <td className="px-3 py-2 text-right font-semibold text-[#354237]">${Number(order.total || 0).toFixed(2)}</td>
+                                <td />
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                        {order.shippingAddress && (() => {
+                          const address = order.shippingAddress;
+                          const addressParts = [address.line1, address.line2, address.city, address.region]
+                            .filter(Boolean)
+                            .filter((part, index, parts) => parts.findIndex(
+                              (candidate) => candidate.trim().toLowerCase() === part.trim().toLowerCase(),
+                            ) === index);
+                          return (
+                            <div className="text-xs leading-5 text-[#687064]">
+                              <p className="font-medium text-[#354237]">Delivery address</p>
+                              <p>{addressParts.join(", ")} {address.postalCode}</p>
+                              <p>{address.country}</p>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </details>
                   </td>
                   <td className="px-4 py-3 text-[#687064]">{order.shippingAddress?.recipientName || order.email || "—"}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-[#687064]">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-[#687064]">${Number(order.total || 0).toFixed(2)}</td>
-                  <td className="px-4 py-3"><span className="inline-block rounded-full bg-[#e9ece5] px-2.5 py-1 text-[11px] font-medium text-[#52644f]">{status.replaceAll("_", " ")}</span></td>
+                  <td className="px-4 py-3"><span className="inline-block rounded-full bg-[#e9ece5] px-2.5 py-1 text-[11px] font-medium text-[#52644f]">{orderStatusLabel(status)}</span></td>
                   <td className="px-4 py-3">
                     {CANCELLABLE_STATUSES.includes(status) ? (
                       <button type="button" disabled={busy} onClick={() => requestCancellation(order)}

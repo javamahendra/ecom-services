@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.app.config.RequestLoggingFilter;
 import com.sun.net.httpserver.HttpServer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +35,10 @@ class GatewayControllerTests {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.sendResponseHeaders(201, body.length);
             exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        upstream.createContext("/api/orders", exchange -> {
+            exchange.sendResponseHeaders(201, -1);
             exchange.close();
         });
         upstream.start();
@@ -72,7 +77,8 @@ class GatewayControllerTests {
         String baseUrl = "http://127.0.0.1:" + upstream.getAddress().getPort();
         ObjectMapper objectMapper = JsonMapper.builder().build();
         GatewayController gateway = new GatewayController(baseUrl, baseUrl, baseUrl, baseUrl,
-                baseUrl, baseUrl, baseUrl, baseUrl, RestClient.builder(), objectMapper);
+                baseUrl, baseUrl, baseUrl, baseUrl, RestClient.builder(), objectMapper,
+                new SimpleMeterRegistry());
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
         request.setRequestURI("/api/products/123");
@@ -87,5 +93,24 @@ class GatewayControllerTests {
         assertEquals("{\"id\":\"123\"}", response.getContentAsString());
         assertEquals("request-123", response.getHeader("X-Request-Id"));
         assertNull(response.getHeader("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    void recordsBusinessRequestByOperationAndStatus() throws Exception {
+        String baseUrl = "http://127.0.0.1:" + upstream.getAddress().getPort();
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        GatewayController gateway = new GatewayController(baseUrl, baseUrl, baseUrl, baseUrl,
+                baseUrl, baseUrl, baseUrl, baseUrl, RestClient.builder(),
+                JsonMapper.builder().build(), meterRegistry);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setRequestURI("/api/orders");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        gateway.proxy(request, response);
+
+        assertEquals(201, response.getStatus());
+        assertEquals(1.0, meterRegistry.counter("ecommerce.business.requests",
+                "operation", "order_create", "status", "201").count());
     }
 }
